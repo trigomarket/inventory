@@ -1,0 +1,3184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<base target="_top">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="theme-color" content="#ffd12e">
+<title>Shop Inventory</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Barlow+Condensed:wght@700&display=swap">
+<style>
+/* One ruled column, like the paper list taped to the shelf. Yellow shelf tags mark inventories and sections.
+   A bottom tab bar switches between Count, Scan, Order and Admin, depending on the person's role. */
+:root {
+  --paper: #f3f5f9;
+  --sheet: #ffffff;
+  --rule: #d5dce8;
+  --ink: #1a2030;
+  --ink-soft: #586176;
+  --pen: #2443b3;
+  --pen-wash: #e3e9fc;
+  --tag: #ffd12e;
+  --tag-ink: #201c08;
+  --out: #b4302a;
+  --out-wash: #fbe4e1;
+  --warn: #8a5800;
+  --warn-wash: #fdf0d2;
+  --ok: #1f7a4a;
+  --ok-wash: #def3e7;
+  --scrim: rgb(12 15 24 / 0.45);
+  --shadow: rgb(12 15 24 / 0.18);
+  --video: #0b0d12;
+  --font-display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --font-body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --radius: 10px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #10131a;
+    --sheet: #171b24;
+    --rule: #2b3242;
+    --ink: #e8ecf4;
+    --ink-soft: #9ca5b9;
+    --pen: #93a9ff;
+    --pen-wash: #1e2846;
+    --out: #ff8b7e;
+    --out-wash: #3b1f1c;
+    --warn: #f3c264;
+    --warn-wash: #3a2e12;
+    --ok: #7fd6a4;
+    --ok-wash: #16301f;
+    --scrim: rgb(0 0 0 / 0.6);
+    --shadow: rgb(0 0 0 / 0.5);
+    color-scheme: dark;
+  }
+}
+
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.4;
+}
+img { max-width: 100%; }
+.wrap {
+  box-sizing: border-box;
+  max-width: 720px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+:focus-visible { outline: 2px solid var(--pen); outline-offset: 2px; }
+.sr {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+button, label, a { -webkit-tap-highlight-color: transparent; }
+svg.i {
+  width: 22px; height: 22px; flex: none;
+  fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+}
+
+/* Sign-in gate */
+.gate {
+  box-sizing: border-box; min-height: 100vh; min-height: 100dvh;
+  display: grid; place-items: center; padding: 24px 16px;
+}
+.gate-card {
+  box-sizing: border-box; width: 100%; max-width: 420px;
+  display: grid; gap: 14px; justify-items: start;
+  padding: 26px 22px; background: var(--sheet);
+  border: 1px solid var(--rule); border-radius: 16px;
+}
+.gate-card h1 { font-size: 2.3rem; }
+.gate-card .fine { max-width: 40ch; }
+.gsi { min-height: 44px; }
+.gate-foot { margin: 0; color: var(--ink-soft); font-size: 0.82rem; }
+
+/* Header */
+.intro { padding-block: 18px 12px; display: grid; gap: 10px; }
+.topline { display: flex; align-items: center; gap: 10px; }
+.topline .who { flex: 1; min-width: 0; }
+h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 2rem;
+  line-height: 1;
+  letter-spacing: 0.015em;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+.who { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; color: var(--ink-soft); font-size: 0.9rem; }
+.who b { color: var(--ink); }
+.pill {
+  display: inline-block; font-size: 0.72rem; font-weight: 700; line-height: 1.6;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 0 8px; border-radius: 99px; background: var(--pen-wash); color: var(--pen);
+}
+.pill.off { background: var(--out-wash); color: var(--out); }
+.pill.ok { background: var(--ok-wash); color: var(--ok); }
+.sub { margin: 0; color: var(--ink-soft); font-size: 0.95rem; }
+.sync { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; color: var(--ink-soft); font-size: 0.85rem; }
+.banner {
+  margin: 0; padding: 10px 12px; border-radius: var(--radius);
+  background: var(--out-wash); color: var(--ink); font-size: 0.92rem;
+}
+.lockbar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 8px 8px 12px; border-radius: var(--radius);
+  background: var(--warn-wash); border: 1px solid var(--warn); color: var(--ink); font-size: 0.92rem;
+}
+.lockbar span { flex: 1; min-width: 0; font-weight: 700; }
+.lockbar .btn { flex: none; height: 36px; }
+.meter { height: 6px; background: var(--rule); border-radius: 99px; overflow: hidden; }
+.meter span { display: block; height: 100%; width: 0; background: var(--pen); border-radius: inherit; }
+
+/* Inventory switch */
+.invs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin-inline: -2px; padding: 2px; }
+.invs::-webkit-scrollbar { display: none; }
+.inv {
+  flex: none; height: 36px; padding: 0 14px;
+  border: 1px solid var(--rule); border-radius: 6px; background: var(--sheet); color: var(--ink);
+  font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; letter-spacing: 0.04em; text-transform: uppercase;
+  cursor: pointer; touch-action: manipulation;
+}
+.inv[aria-pressed="true"] { background: var(--tag); border-color: var(--tag); color: var(--tag-ink); }
+
+/* Count status card */
+.status {
+  display: grid; gap: 8px; padding: 12px 14px;
+  border: 1px solid var(--rule); border-radius: var(--radius); background: var(--sheet);
+}
+.status.is-live { border-color: var(--pen); background: var(--pen-wash); }
+.status.is-late { border-color: var(--warn); background: var(--warn-wash); }
+.status p { margin: 0; }
+.status .lead { font-weight: 700; }
+.status .fine { font-size: 0.88rem; }
+.btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Sticky search + sections */
+.bar {
+  position: sticky; top: 0; z-index: 5;
+  background: var(--paper); border-bottom: 1px solid var(--rule);
+}
+.bar .wrap { padding-block: 10px; display: grid; gap: 8px; }
+.controls { display: flex; gap: 8px; align-items: center; }
+.search { flex: 1; min-width: 0; position: relative; display: block; }
+.search svg {
+  position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
+  width: 17px; height: 17px; stroke: var(--ink-soft); fill: none; pointer-events: none;
+}
+.search input {
+  box-sizing: border-box; width: 100%; height: 44px;
+  padding: 0 12px 0 36px;
+  border: 1px solid var(--rule); border-radius: var(--radius);
+  background: var(--sheet); color: var(--ink);
+  font: inherit; font-size: 16px;
+}
+.search input::placeholder { color: var(--ink-soft); }
+.toggle {
+  flex: none; height: 44px; padding: 0 12px;
+  border: 1px solid var(--rule); border-radius: var(--radius);
+  background: var(--sheet); color: var(--ink);
+  font: inherit; font-size: 0.9rem; font-weight: 700;
+  white-space: nowrap; cursor: pointer;
+}
+.toggle[aria-pressed="true"] { background: var(--pen); border-color: var(--pen); color: var(--sheet); }
+.chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin-inline: -2px; padding: 2px; }
+.chips::-webkit-scrollbar { display: none; }
+.chip {
+  flex: none; height: 34px; padding: 0 12px;
+  display: inline-flex; align-items: center; gap: 7px;
+  border: 1px solid var(--rule); border-radius: 99px;
+  background: var(--sheet); color: var(--ink);
+  font: inherit; cursor: pointer; touch-action: manipulation;
+}
+.chip b { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; letter-spacing: 0.04em; text-transform: uppercase; }
+.chip small { font-size: 0.82rem; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.chip.is-complete small { color: var(--pen); font-weight: 700; }
+.chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.chip[aria-pressed="true"] small { color: var(--paper); }
+
+/* Lists */
+.list { padding-block: 14px 8px; display: grid; gap: 22px; }
+.group { display: grid; gap: 10px; }
+.group-head { margin: 0; display: flex; align-items: center; gap: 10px; font-size: 1rem; font-weight: 400; }
+.tag {
+  font-family: var(--font-display); font-weight: 700;
+  font-size: 1.4rem; line-height: 1; letter-spacing: 0.04em; text-transform: uppercase;
+  padding: 5px 10px 4px; border-radius: 4px;
+  background: var(--tag); color: var(--tag-ink);
+}
+.tag.small { font-size: 1rem; padding: 4px 8px 3px; }
+.brand-tag {
+  font-family: var(--font-display); font-weight: 700;
+  font-size: 1.3rem; line-height: 1; letter-spacing: 0.04em; text-transform: uppercase;
+  padding: 4px 9px 3px; border: 2px solid var(--ink); border-radius: 4px; color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.group-meta { color: var(--ink-soft); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+.rows {
+  list-style: none; margin: 0; padding: 0;
+  background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--radius); overflow: hidden;
+}
+.row { border-top: 1px solid var(--rule); }
+.row:first-child { border-top: 0; }
+.row-main {
+  box-sizing: border-box; min-height: 64px;
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 8px 8px 4px;
+}
+.row-name {
+  flex: 1; min-width: 0;
+  display: flex; align-items: center; gap: 10px;
+  margin: 0; padding: 6px 4px;
+  border: 0; border-radius: 6px; background: none;
+  color: inherit; font: inherit; text-align: left; cursor: pointer;
+}
+.name-text { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.thumb { width: 40px; height: 40px; flex: none; border-radius: 6px; object-fit: cover; background: var(--rule); }
+.line1 { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.pname { font-weight: 700; font-size: 1.02rem; line-height: 1.25; overflow-wrap: anywhere; }
+.variant {
+  font-size: 0.82rem; line-height: 1.5; padding: 0 8px;
+  border: 1px solid var(--rule); border-radius: 99px; color: var(--ink-soft);
+}
+.badge-s {
+  font-size: 0.72rem; font-weight: 700; line-height: 1.6; padding: 0 7px;
+  letter-spacing: 0.06em; text-transform: uppercase; border-radius: 99px;
+}
+.badge-s.bad { background: var(--out-wash); color: var(--out); }
+.badge-s.soon { background: var(--warn-wash); color: var(--warn); }
+.badge-s.ok { background: var(--ok-wash); color: var(--ok); }
+.meta { font-size: 0.84rem; color: var(--ink-soft); overflow-wrap: anywhere; }
+.meta b { color: var(--ink); font-weight: 700; }
+.stepper { flex: none; display: flex; align-items: flex-start; gap: 4px; }
+.step {
+  width: 42px; height: 42px; padding: 0;
+  display: grid; place-items: center;
+  border: 1px solid var(--rule); border-radius: 50%;
+  background: var(--paper); color: var(--ink);
+  font: inherit; font-size: 1.45rem; line-height: 1;
+  cursor: pointer; touch-action: manipulation;
+}
+.step:active { background: var(--pen-wash); }
+.qty-wrap { display: grid; justify-items: center; gap: 1px; }
+.qty {
+  box-sizing: border-box; width: 58px; height: 42px;
+  border: 1px solid var(--rule); border-radius: 8px;
+  background: var(--sheet); color: var(--ink);
+  font: inherit; font-weight: 700; font-size: 1.2rem;
+  text-align: center; font-variant-numeric: tabular-nums;
+}
+.qty::placeholder { color: var(--ink-soft); font-weight: 400; }
+.unit { font-size: 0.72rem; color: var(--ink-soft); line-height: 1.1; }
+.stepper.is-counted .qty { background: var(--pen-wash); border-color: var(--pen); color: var(--pen); }
+.stepper.is-out .qty { background: var(--out-wash); border-color: var(--out); color: var(--out); }
+.stepper.is-pending .qty { border-style: dashed; }
+.cart {
+  flex: none; width: 40px; height: 40px; padding: 0;
+  display: grid; place-items: center;
+  border: 1px solid var(--rule); border-radius: 50%;
+  background: var(--sheet); color: var(--ink-soft);
+  font: inherit; font-weight: 700; font-size: 1rem; font-variant-numeric: tabular-nums;
+  cursor: pointer; touch-action: manipulation;
+}
+.cart[aria-pressed="true"] { background: var(--pen); border-color: var(--pen); color: var(--sheet); }
+.cart[aria-expanded="true"] { box-shadow: 0 0 0 3px var(--pen-wash), 0 0 0 4px var(--pen); }
+.cart svg.i { width: 20px; height: 20px; }
+.order-ed {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px;
+  padding: 10px 12px 12px; border-top: 1px dashed var(--pen); background: var(--pen-wash);
+}
+.order-label { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--pen); }
+.order-info { flex: 1 1 100%; display: flex; align-items: center; gap: 10px; }
+.order-info .meta { flex: 1; min-width: 0; }
+.order-ed.is-pending .oqty { border-style: dashed; }
+.oqty {
+  box-sizing: border-box; width: 58px; height: 42px;
+  border: 1px solid var(--pen); border-radius: 8px;
+  background: var(--sheet); color: var(--pen);
+  font: inherit; font-weight: 700; font-size: 1.2rem;
+  text-align: center; font-variant-numeric: tabular-nums;
+}
+.oqty::placeholder { color: var(--ink-soft); font-weight: 400; }
+.stock {
+  flex: none; min-width: 60px; box-sizing: border-box; padding: 4px 6px;
+  display: grid; justify-items: center; gap: 1px;
+}
+.stock b { font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+.stock.is-out b { color: var(--out); }
+.tick {
+  flex: none; width: 44px; height: 44px; padding: 0;
+  display: grid; place-items: center;
+  border: 2px solid var(--rule); border-radius: 10px;
+  background: var(--sheet); color: transparent; cursor: pointer; touch-action: manipulation;
+}
+.tick[aria-pressed="true"] { background: var(--ok); border-color: var(--ok); color: var(--sheet); }
+.row.is-bought .pname { text-decoration: line-through; text-decoration-thickness: 2px; color: var(--ink-soft); }
+.buy-qty { flex: none; display: grid; justify-items: center; padding: 0 6px; }
+.buy-qty b { font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+
+/* Empty / loading */
+.empty {
+  display: grid; gap: 6px; padding: 22px 18px;
+  border: 1px dashed var(--rule); border-radius: var(--radius); background: var(--sheet);
+}
+.empty h2, .h2 {
+  margin: 0; font-family: var(--font-display); font-weight: 700;
+  font-size: 1.45rem; letter-spacing: 0.02em; text-transform: uppercase; text-wrap: balance;
+}
+.empty p { margin: 0; color: var(--ink-soft); max-width: 60ch; }
+.empty .btn { justify-self: start; margin-top: 6px; }
+
+/* Order + admin */
+.view-head { display: grid; gap: 10px; padding-top: 4px; }
+.seg { display: inline-flex; justify-self: start; gap: 2px; padding: 3px; border: 1px solid var(--rule); border-radius: 99px; background: var(--sheet); }
+.seg button {
+  height: 36px; padding: 0 16px; border: 0; border-radius: 99px;
+  background: none; color: var(--ink-soft); font: inherit; font-weight: 700; cursor: pointer;
+}
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.cards { display: grid; gap: 12px; padding-block: 8px 12px; }
+.card { display: grid; gap: 8px; padding: 12px 14px; background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--radius); }
+.card p { margin: 0; }
+.card-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.plain { list-style: none; margin: 0; padding: 0; display: grid; }
+.plain li { border-top: 1px solid var(--rule); }
+.plain li:first-child { border-top: 0; }
+.plain button {
+  width: 100%; min-height: 52px; padding: 8px 2px; box-sizing: border-box;
+  display: grid; gap: 2px; justify-items: start;
+  border: 0; background: none; color: var(--ink); font: inherit; text-align: left; cursor: pointer;
+}
+.plain .line1 small { color: var(--ink-soft); font-size: 0.82rem; }
+.plain .static { padding: 8px 2px; display: grid; gap: 2px; }
+
+/* Footer */
+.actions { padding-block: 18px 12px; display: grid; gap: 12px; }
+.hint { margin: 0; max-width: 60ch; color: var(--ink-soft); font-size: 0.9rem; }
+.page-end { height: calc(86px + env(safe-area-inset-bottom, 0px)); }
+
+/* Buttons */
+.btn {
+  height: 42px; padding: 0 14px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  box-sizing: border-box;
+  border: 1px solid var(--rule); border-radius: 8px;
+  background: var(--sheet); color: var(--ink);
+  font: inherit; font-weight: 700; cursor: pointer; text-decoration: none;
+}
+.btn:disabled { opacity: 0.5; cursor: default; }
+.btn.primary { background: var(--pen); border-color: var(--pen); color: var(--sheet); }
+.btn.danger { color: var(--out); }
+.btn.armed { background: var(--out); border-color: var(--out); color: var(--sheet); }
+.link-btn {
+  padding: 4px 2px; border: 0; background: none; color: var(--pen);
+  font: inherit; font-weight: 700; cursor: pointer; text-decoration: none;
+}
+.sync .link-btn { padding: 2px 0; font-size: 0.85rem; }
+.add-here { justify-self: start; }
+
+/* Bottom tab bar */
+.tabbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 15;
+  background: var(--sheet); border-top: 1px solid var(--rule);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.tabbar-inner { max-width: 720px; margin: 0 auto; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; }
+.tab {
+  position: relative; height: 62px; padding: 0;
+  display: grid; justify-items: center; align-content: center; gap: 3px;
+  border: 0; background: none; color: var(--ink-soft);
+  font: inherit; font-size: 0.78rem; font-weight: 700; cursor: pointer; touch-action: manipulation;
+}
+.tab[aria-pressed="true"] { color: var(--pen); }
+.tab .disc {
+  width: 46px; height: 46px; margin-top: -20px;
+  display: grid; place-items: center; border-radius: 50%;
+  background: var(--pen); color: var(--sheet); box-shadow: 0 4px 14px var(--shadow);
+}
+.badge {
+  position: absolute; top: 6px; left: calc(50% + 6px);
+  min-width: 19px; height: 19px; padding: 0 5px; box-sizing: border-box;
+  border-radius: 99px; background: var(--ink); color: var(--paper);
+  font-size: 0.72rem; line-height: 19px; text-align: center; font-variant-numeric: tabular-nums;
+}
+
+/* Sheets (bottom panels) */
+.backdrop { position: fixed; inset: 0; z-index: 20; background: var(--scrim); }
+.sheet {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 21;
+  box-sizing: border-box; max-width: 720px; max-height: 92vh; margin: 0 auto; overflow-y: auto;
+  display: grid; gap: 12px; align-content: start;
+  padding-top: 18px;
+  padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: var(--sheet); color: var(--ink);
+  border: 1px solid var(--rule); border-bottom: 0; border-radius: 16px 16px 0 0;
+  box-shadow: 0 -12px 32px var(--shadow);
+}
+.sheet h2 {
+  margin: 0; font-family: var(--font-display); font-weight: 700;
+  font-size: 1.5rem; line-height: 1.1; letter-spacing: 0.02em; text-transform: uppercase; text-wrap: balance;
+}
+.sheet h3 { margin: 4px 0 0; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-soft); }
+.fine { margin: 0; color: var(--ink-soft); font-size: 0.9rem; }
+.info { margin: 0; font-size: 0.95rem; }
+.info b { font-variant-numeric: tabular-nums; }
+.field { display: grid; gap: 4px; min-width: 0; }
+.field > span { font-size: 0.76rem; font-weight: 700; color: var(--ink-soft); letter-spacing: 0.07em; text-transform: uppercase; }
+.field input, .field select {
+  box-sizing: border-box; width: 100%; height: 42px; padding: 0 10px;
+  border: 1px solid var(--rule); border-radius: 8px;
+  background: var(--paper); color: var(--ink);
+  font: inherit; font-size: 16px;
+}
+.field input:disabled { opacity: 0.7; }
+.field input::placeholder { color: var(--ink-soft); }
+.fields-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.with-btn { display: flex; gap: 8px; align-items: end; }
+.with-btn .field { flex: 1; }
+.checks { display: grid; gap: 2px; }
+.check { display: flex; align-items: center; gap: 10px; min-height: 42px; cursor: pointer; }
+.check input { width: 22px; height: 22px; margin: 0; accent-color: var(--pen); flex: none; }
+.check small { color: var(--ink-soft); }
+.edit-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.edit-actions .push { margin-left: auto; }
+.photo-field { display: flex; align-items: center; gap: 12px; }
+.ed-photo-view { flex: none; padding: 0; border: 0; background: none; border-radius: 8px; cursor: zoom-in; }
+.ed-photo { display: block; width: 88px; height: 88px; object-fit: cover; border-radius: 8px; background: var(--rule); }
+.hero-photo, .viewer-img { display: block; width: 100%; height: auto; object-fit: contain; border-radius: var(--radius); background: var(--paper); }
+.hero-photo { max-height: 200px; cursor: zoom-in; }
+.viewer-img { max-height: 70vh; }
+.batches { display: grid; gap: 8px; }
+.batch { display: grid; grid-template-columns: 1fr 96px 40px; gap: 8px; align-items: end; }
+.icon-btn {
+  width: 40px; height: 42px; padding: 0; display: grid; place-items: center;
+  border: 1px solid var(--rule); border-radius: 8px; background: var(--sheet); color: var(--ink-soft); cursor: pointer;
+}
+.hist { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 0.9rem; }
+.hist li { display: flex; gap: 8px; justify-content: space-between; border-bottom: 1px dashed var(--rule); padding-bottom: 4px; }
+.stepper.big { justify-content: center; gap: 10px; align-items: flex-start; }
+.stepper.big .step { width: 58px; height: 58px; font-size: 1.8rem; }
+.stepper.big .qty { width: 100px; height: 58px; font-size: 1.7rem; }
+.code-form { display: flex; gap: 8px; align-items: end; }
+.code-form .field { flex: 1; }
+.codebox {
+  margin: 0; padding: 8px 10px; border: 1px dashed var(--rule); border-radius: 8px;
+  background: var(--paper); font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 1.05rem; letter-spacing: 0.06em; overflow-wrap: anywhere;
+}
+.pick {
+  list-style: none; margin: 0; padding: 0;
+  border: 1px solid var(--rule); border-radius: var(--radius);
+  max-height: 44vh; overflow-y: auto; background: var(--sheet);
+}
+.pick li + li { border-top: 1px solid var(--rule); }
+.pick button {
+  width: 100%; min-height: 48px; padding: 8px 12px; box-sizing: border-box;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px;
+  border: 0; background: none; color: var(--ink); font: inherit; text-align: left; cursor: pointer;
+}
+.pick small { margin-left: auto; color: var(--ink-soft); font-size: 0.8rem; }
+.pick-empty { padding: 12px; color: var(--ink-soft); }
+.loading { display: flex; align-items: center; gap: 12px; }
+.spinner {
+  width: 26px; height: 26px; flex: none; box-sizing: border-box; border-radius: 50%;
+  border: 3px solid var(--rule); border-top-color: var(--pen);
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.textcopy {
+  box-sizing: border-box; width: 100%; min-height: 220px; padding: 10px;
+  border: 1px solid var(--rule); border-radius: 8px; background: var(--paper); color: var(--ink);
+  font: inherit; font-size: 15px;
+}
+.live-wrap {
+  position: relative; overflow: hidden; border-radius: var(--radius);
+  background: var(--video); aspect-ratio: 4 / 3; max-height: 34vh; width: 100%;
+}
+.live-wrap video { display: block; width: 100%; height: 100%; object-fit: cover; }
+.live-frame {
+  position: absolute; left: 10%; right: 10%; top: 28%; bottom: 28%;
+  border: 3px solid var(--tag); border-radius: 8px; pointer-events: none;
+}
+.live-wrap.flash .live-frame { border-color: var(--ok); }
+.scan-card { display: grid; gap: 8px; padding: 12px; border: 2px solid var(--pen); border-radius: var(--radius); background: var(--pen-wash); }
+.scan-card .title { font-weight: 700; font-size: 1.05rem; }
+.recent { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.recent li { display: flex; align-items: center; gap: 10px; min-height: 40px; border-bottom: 1px dashed var(--rule); }
+.recent li span { flex: 1; min-width: 0; }
+.recent li b { font-variant-numeric: tabular-nums; }
+.toast {
+  position: fixed; z-index: 30;
+  left: 50%; transform: translateX(-50%);
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  box-sizing: border-box; width: max-content; max-width: calc(100vw - 32px);
+  display: flex; align-items: center; gap: 14px;
+  padding: 10px 14px; border-radius: 10px;
+  background: var(--ink); color: var(--paper);
+  font-size: 0.95rem; box-shadow: 0 8px 24px var(--shadow);
+}
+.toast-act {
+  flex: none; min-height: 36px; padding: 0 4px;
+  border: 0; background: none; color: var(--paper);
+  font: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .meter span { transition: width 0.3s ease; }
+  .step, .chip, .toggle, .tick, .inv { transition: background-color 0.12s ease; }
+}
+@media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2.4s; } }
+@media (max-width: 360px) {
+  .step { width: 38px; height: 38px; }
+  .qty, .oqty { width: 50px; }
+  .cart { width: 36px; height: 36px; }
+}
+</style>
+</head>
+<body>
+
+<section class="gate" id="gate" aria-labelledby="gate-title">
+  <div class="gate-card">
+    <span class="tag">Inventory</span>
+    <h1 id="gate-title">Sign in</h1>
+    <p class="fine" id="gate-text">Use the Google account your admin added.</p>
+    <div class="gsi" id="gsi-btn"></div>
+    <div class="loading" id="gate-loading" hidden><span class="spinner" aria-hidden="true"></span><span class="fine">Opening your inventory…</span></div>
+    <button class="btn" id="gate-retry" type="button" hidden>Try again</button>
+    <p class="gate-foot">Only people on the shop’s list can open it. Your Google password never reaches this app.</p>
+  </div>
+</section>
+
+<div id="app" hidden>
+  <header class="wrap intro">
+    <div class="topline">
+      <div class="who" id="who"></div>
+      <button class="link-btn" id="sign-out" type="button">Sign out</button>
+    </div>
+    <h1 id="title">Inventory</h1>
+    <div class="invs" id="invs" role="group" aria-label="Inventories" hidden></div>
+    <p class="sync" id="sync" hidden><span id="sync-time"></span><button class="link-btn" id="sync-refresh" type="button">Refresh</button></p>
+    <p class="banner" id="banner" role="alert" hidden></p>
+    <div class="lockbar" id="lockbar" role="status" hidden><span>Locked: only admins can use the app right now.</span><button class="btn" id="lockbar-btn" type="button">Unlock</button></div>
+    <div class="status" id="status" hidden></div>
+  </header>
+
+  <div class="bar" id="bar" hidden>
+    <div class="wrap">
+      <div class="controls">
+        <label class="search">
+          <span class="sr">Search products</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke-width="2"></circle><path d="m20 20-3.6-3.6" stroke-width="2" stroke-linecap="round"></path></svg>
+          <input id="q" type="search" placeholder="Search" autocomplete="off" enterkeyhint="search">
+        </label>
+        <button class="toggle" id="filter" type="button" aria-pressed="false" hidden>Hide counted</button>
+      </div>
+      <div class="chips" id="chips" role="group" aria-label="Sections" hidden></div>
+    </div>
+  </div>
+
+  <main class="wrap" id="main">
+    <div class="list" id="view-count"></div>
+    <div id="view-order" hidden></div>
+    <div id="view-admin" hidden></div>
+  </main>
+
+  <footer class="wrap actions" id="footer" hidden>
+    <div class="btn-row" id="footer-btns"></div>
+    <p class="hint" id="footer-hint"></p>
+  </footer>
+  <div class="page-end" aria-hidden="true"></div>
+
+  <nav class="tabbar" aria-label="Views"><div class="tabbar-inner" id="tabs"></div></nav>
+</div>
+
+<div class="sr">
+  <input type="file" id="file-barcode" accept="image/*" capture="environment" tabindex="-1" aria-label="Barcode photo">
+  <input type="file" id="file-photo" accept="image/*" tabindex="-1" aria-label="Product photo">
+</div>
+
+<div class="backdrop" id="backdrop" hidden></div>
+<div class="sheet" id="panel" role="dialog" aria-modal="true" hidden></div>
+<div class="toast" id="toast" hidden><span id="toast-msg" role="status" aria-live="polite"></span><button class="toast-act" id="toast-act" type="button" hidden></button></div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ======================= Settings: paste your two values here ======================= */
+  const CONFIG = {
+    // Apps Script > Deploy > Manage deployments > Web app URL. It ends in /exec.
+    BACKEND_URL: 'https://script.google.com/macros/s/AKfycbw3OsRw936dVMGmTftaP4QPWbLWLlU_DusvFynp6s-y9-Q-bAVAyPBIEVe_B9Ld13yQKw/exec',
+    // Google Cloud > Google Auth Platform > Clients > your web client ID. The same value goes in Code.gs.
+    CLIENT_ID: '518916545278-atoo637q0gcoaq4nkv2akqb04lk2f1u6.apps.googleusercontent.com',
+  };
+
+  /* ======================= Small helpers ======================= */
+  const $ = (sel, root = document) => root.querySelector(sel);
+  // Builds an element. Text always goes in as text (never as HTML), so product names can't inject code.
+  function h(tag, attrs, ...kids) {
+    const e = document.createElement(tag);
+    if (attrs) {
+      for (const [k, v] of Object.entries(attrs)) {
+        if (v == null || v === false) continue;
+        if (k === 'class') e.className = v;
+        else if (k === 'text') e.textContent = v;
+        else if (k === 'icon') e.innerHTML = ICON[v];
+        else if (k.startsWith('on') && typeof v === 'function') e.addEventListener(k.slice(2), v);
+        else if (k === 'checked') e.checked = !!v;
+        else if (k === 'value') e.value = v;
+        else e.setAttribute(k, v === true ? '' : String(v));
+      }
+    }
+    for (const kid of kids) if (kid != null && kid !== false) e.append(kid);
+    return e;
+  }
+  const svg = (d) => '<svg class="i" viewBox="0 0 24 24" aria-hidden="true">' + d + '</svg>';
+  const ICON = {
+    x: svg('<path d="M6 6l12 12M18 6L6 18"></path>'),
+    check: svg('<path d="M5 12.5l4.2 4.2L19 7"></path>'),
+    list: svg('<path d="M9 6h11M9 12h11M9 18h11"></path><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01" stroke-width="2.8"></path>'),
+    cart: svg('<path d="M3 4h2l2.2 10.2a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.1L21 8H6.2"></path><circle cx="9.5" cy="19.5" r="1.3"></circle><circle cx="17" cy="19.5" r="1.3"></circle>'),
+    scan: svg('<path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3M7 12h10"></path>'),
+    gear: svg('<circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"></path>'),
+    trash: svg('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12.2A2 2 0 0 0 9 21h6a2 2 0 0 0 2-1.8L18 7M9 7V4.5A1.5 1.5 0 0 1 10.5 3h3A1.5 1.5 0 0 1 15 4.5V7"></path>'),
+  };
+  const str = (v) => (typeof v === 'string' ? v : v == null ? '' : String(v));
+  const num = (v) => (typeof v === 'number' && isFinite(v) ? v : null);
+  const norm = (s) => str(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+  const pad = (n) => String(n).padStart(2, '0');
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const tick = () => new Promise((r) => setTimeout(r, 0));
+  const round2 = (n) => Math.round(n * 100) / 100;
+  const collator = new Intl.Collator('es', { numeric: true, sensitivity: 'base' });
+  const nf = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
+  const nf1 = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
+  const nf0 = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
+  const money = new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const timeFmt = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
+  const whenFmt = new Intl.DateTimeFormat(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  const dayFmt = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' });
+  const dayFmtY = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const POLL_MS = 30000;
+  const ROLE_NAME = { admin: 'Admin', buyer: 'Buyer', counter: 'Counter', viewer: 'Viewer' };
+  const UNIT_NAME = { pack: ['pack', 'packs'], pc: ['pc', 'pcs'], g: ['g', 'g'] };
+  function rid(prefix) {
+    const a = new Uint8Array(8);
+    crypto.getRandomValues(a);
+    return (prefix || '') + Array.from(a, (b) => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  // Remembered on this phone only: the sign-in pass and a few view choices. Never product data.
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* storage blocked */ } },
+    del(k) { try { localStorage.removeItem(k); } catch (e) { /* storage blocked */ } },
+  };
+
+  /* ======================= State ======================= */
+  const S = {
+    session: store.get('inv-session'), me: null, loaded: false, loading: false,
+    inventories: [], items: new Map(), counts: [], prices: {}, people: [], recent: [], sheetUrl: '', orderMultiple: 2,
+    inv: store.get('inv-current') || '', view: store.get('inv-view') || 'count', orderMode: store.get('inv-order-mode') || 'plan',
+    q: [], filter: false, section: 'all', keep: new Set(), orderOpen: null,
+    inflight: 0, lastWriteAt: 0, syncedAt: null, authLost: false,
+    sheetSync: null, onSheetClose: null, scan: null, photoFor: null, photoBusy: null,
+  };
+  const can = (p) => !!(S.me && S.me.can && S.me.can[p]);
+  const isAdmin = () => !!(S.me && S.me.role === 'admin');
+  const invName = (id) => (S.inventories.find((v) => v.id === id) || { name: id || '—' }).name;
+  const currentInv = () => S.inventories.find((v) => v.id === S.inv) || null;
+  const openCount = (inv) => S.counts.find((c) => c.inventory === inv && c.status === 'open') || null;
+  const isLate = (c) => !c || !(Date.parse(c.until) > Date.now());
+  // True when this person may count in the selected inventory right now.
+  function countingHere() {
+    const c = openCount(S.inv);
+    if (!c || !c.canCount) return false;
+    return isAdmin() || !isLate(c);
+  }
+
+  /* ======================= Talking to the server ======================= */
+  // Two ways to run this same page:
+  //  - On GitHub Pages: requests go to the script's /exec link with the sign-in pass (people sign in with Google).
+  //  - Inside Apps Script (the test drive): the page talks to the script directly and Google says who you are.
+  const IN_APPS_SCRIPT = !!(window.google && window.google.script && window.google.script.run);
+  const configMissing = () => !IN_APPS_SCRIPT && /PASTE-/.test(CONFIG.BACKEND_URL + CONFIG.CLIENT_ID);
+  const connected = () => IN_APPS_SCRIPT || !!S.session;
+
+  // Every request goes through here. The server checks everything again, whatever this page shows.
+  async function api(action, args) {
+    const out = IN_APPS_SCRIPT ? await viaAppsScript(action, args) : await viaFetch(action, args);
+    if (!out || typeof out !== 'object') throw { code: 'unavailable' };
+    if (out.ok !== true) {
+      const code = str(out.error) || 'ERROR';
+      if (code === 'AUTH' && action !== 'signIn') sessionLost();
+      if (code === 'LOCKED' && action !== 'signIn') appLocked();
+      throw { code };
+    }
+    return out.data;
+  }
+  async function viaFetch(action, args) {
+    let res;
+    try {
+      res = await fetch(CONFIG.BACKEND_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },   // a "simple" request: no extra round trip
+        body: JSON.stringify({ action, args: args || {}, session: S.session || '' }),
+        cache: 'no-store',
+        credentials: 'omit',
+        redirect: 'follow',
+      });
+    } catch (e) {
+      throw { code: navigator.onLine === false ? 'offline' : 'unavailable' };
+    }
+    try { return await res.json(); } catch (e) { return null; }
+  }
+  function viaAppsScript(action, args) {
+    return new Promise((resolve, reject) => {
+      window.google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler(() => reject({ code: navigator.onLine === false ? 'offline' : 'unavailable' }))
+        .call(action, args || {});
+    });
+  }
+  async function withRetry(fn) {
+    try { return await fn(); }
+    catch (e) {
+      if (e && (e.code === 'unavailable' || e.code === 'BUSY' || e.code === 'offline')) {
+        await sleep(900 + Math.random() * 900);
+        return await fn();
+      }
+      throw e;
+    }
+  }
+  async function write(action, args) {
+    S.inflight++;
+    try { return await withRetry(() => api(action, args)); }
+    finally { S.inflight--; S.lastWriteAt = Date.now(); }
+  }
+  function errText(e) {
+    switch (e && e.code) {
+      case 'DENIED': return 'Not allowed.';
+      case 'LOCKED': return 'The app is locked.';
+      case 'CLOSED': return 'Counting is closed for this inventory.';
+      case 'NOT_FOUND': return 'That product was removed on another phone.';
+      case 'CONFLICT': return 'That changed on another phone. Showing the latest.';
+      case 'BUSY': return 'The server is busy. Try again in a moment.';
+      case 'BAD_INPUT': return 'Check what you typed and try again.';
+      case 'BAD_IMAGE': return 'That photo is too large to save. Try another one.';
+      case 'DRIVE_ERROR': return 'Couldn’t save the photo to Google Drive. Try again.';
+      case 'SETUP_NEEDED': return 'The server needs setup. Run setup in Apps Script.';
+      case 'offline': return 'You’re offline. Check your connection and try again.';
+      default: return 'Couldn’t save. Check your connection and try again.';
+    }
+  }
+  function failed(e) {
+    if (e && (e.code === 'AUTH' || e.code === 'LOCKED')) return;   // already back at the sign-in or locked card
+    toast(errText(e));
+    if (e && ['CLOSED', 'CONFLICT', 'NOT_FOUND', 'DENIED'].includes(e.code)) load();
+    refresh();
+  }
+  function applyItem(it) {
+    if (it && it.id) S.items.set(it.id, it);
+  }
+
+  /* ======================= Sign-in ======================= */
+  let gisP = null;
+  function loadGis() {
+    if (window.google && window.google.accounts && window.google.accounts.id) return Promise.resolve();
+    if (gisP) return gisP;
+    gisP = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://accounts.google.com/gsi/client';
+      s.async = true;
+      s.onload = () => resolve();
+      s.onerror = () => { gisP = null; s.remove(); reject(new Error('gis')); };
+      document.head.append(s);
+    });
+    return gisP;
+  }
+  function emailFromToken(cred) {
+    try {
+      const part = cred.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      return str(JSON.parse(decodeURIComponent(escape(atob(part + '==='.slice((part.length + 3) % 4))))).email);
+    } catch (e) { return ''; }
+  }
+  // Shows the sign-in card in one of its states.
+  async function gate(state, info) {
+    closeSheets();
+    $('#app').hidden = true;
+    $('#gate').hidden = false;
+    const title = $('#gate-title'), text = $('#gate-text'), btn = $('#gsi-btn');
+    const signing = !IN_APPS_SCRIPT && (state === 'signin' || state === 'denied');
+    $('#gate-loading').hidden = state !== 'loading';
+    $('#gate-retry').hidden = !(state === 'error' || state === 'locked' || state === 'noaccess');
+    btn.hidden = !signing;
+    if (state === 'setup') {
+      title.textContent = 'Almost ready';
+      text.textContent = 'Open index.html and paste your BACKEND_URL and CLIENT_ID at the top of the script (see the setup guide).';
+    } else if (state === 'loading') {
+      title.textContent = 'Opening';
+      text.textContent = '';
+    } else if (state === 'locked') {
+      title.textContent = 'Locked';
+      text.textContent = 'The admin has locked the app for now. Try again later.';
+    } else if (state === 'noaccess') {
+      title.textContent = 'Owner only';
+      text.textContent = 'This test version opens only for the owner’s Google account: inside Apps Script, Google only tells the app who the owner is. Your team uses the GitHub version.';
+    } else if (state === 'denied') {
+      title.textContent = 'Not on the list';
+      text.textContent = (info || 'That Google account') + ' isn’t on this shop’s list. Ask the admin to add it, or sign in with another account.';
+    } else if (state === 'error') {
+      title.textContent = 'Can’t connect';
+      text.textContent = info || 'Couldn’t reach the server. Check your connection and try again.';
+    } else {
+      title.textContent = 'Sign in';
+      text.textContent = info || 'Use the Google account your admin added.';
+    }
+    if (signing) {
+      try { await loadGis(); }
+      catch (e) { gate('error', 'Google sign-in didn’t load. Check your connection and try again.'); return; }
+      const gid = window.google.accounts.id;
+      gid.initialize({ client_id: CONFIG.CLIENT_ID, callback: onCredential, auto_select: state === 'signin',
+        cancel_on_tap_outside: false, use_fedcm_for_prompt: true });
+      btn.replaceChildren();
+      gid.renderButton(btn, { theme: 'outline', size: 'large', text: 'signin_with', shape: 'pill', width: 280 });
+      if (state === 'signin') { try { gid.prompt(); } catch (e) { /* the button still works */ } }
+    }
+  }
+  async function onCredential(resp) {
+    const cred = resp && resp.credential;
+    if (!cred) return;
+    const email = emailFromToken(cred);
+    gate('loading');
+    try {
+      const r = await api('signIn', { credential: cred });
+      S.session = r.session;
+      S.authLost = false;
+      store.set('inv-session', r.session);
+      await load(true);
+    } catch (e) {
+      const code = e && e.code;
+      if (code === 'DENIED') gate('denied', email);
+      else if (code === 'LOCKED') gate('locked');
+      else if (code === 'BUSY') gate('error', 'Too many sign-in attempts. Wait a few minutes and try again.');
+      else if (code === 'SETUP_NEEDED') gate('error', 'The server isn’t ready: paste the CLIENT_ID in Code.gs and deploy a new version.');
+      else if (code === 'AUTH') gate('signin', 'That sign-in didn’t work. Try again.');
+      else gate('error');
+    }
+  }
+  // The pass expired or was revoked: back to the sign-in card.
+  function sessionLost() {
+    if (S.authLost) return;
+    S.authLost = true;
+    S.session = null;
+    S.loaded = false;
+    store.del('inv-session');
+    if (IN_APPS_SCRIPT) gate('noaccess');
+    else gate('signin', 'Your sign-in ended. Sign in again to continue.');
+  }
+  // The admin locked the app: show the locked card (the sign-in pass is kept for when it's unlocked).
+  function appLocked() {
+    if (S.lockedOut) return;
+    S.lockedOut = true;
+    S.loaded = false;
+    gate('locked');
+  }
+  function signOut() {
+    S.session = null;
+    S.loaded = false;
+    S.me = null;
+    S.items = new Map();
+    store.del('inv-session');
+    try { if (window.google && window.google.accounts) window.google.accounts.id.disableAutoSelect(); } catch (e) { /* ignore */ }
+    gate('signin', 'Signed out.');
+  }
+  $('#sign-out').addEventListener('click', signOut);
+  $('#gate-retry').addEventListener('click', () => boot());
+
+  /* ======================= Loading ======================= */
+  async function load(first) {
+    if (S.loading || !connected()) return;
+    S.loading = true;
+    const started = Date.now();
+    try {
+      const d = await api('load');
+      if (first || !S.loaded || (S.inflight === 0 && !hasPending() && S.lastWriteAt < started)) applyLoad(d);
+      S.loaded = true;
+      S.syncedAt = new Date();
+      $('#banner').hidden = true;
+      if (first) showApp();
+    } catch (e) {
+      const code = e && e.code;
+      if (code === 'AUTH' || code === 'LOCKED') return;   // already showing the right card
+      if (!S.loaded) {
+        if (code === 'DENIED' && IN_APPS_SCRIPT) gate('noaccess');
+        else gate('error', code === 'SETUP_NEEDED' ? 'The server needs setup. Run setup in Apps Script.' : '');
+      } else {
+        $('#banner').textContent = 'Couldn’t reach the server. Check your connection; changes may not save.';
+        $('#banner').hidden = false;
+      }
+    } finally {
+      S.loading = false;
+      refresh();
+    }
+  }
+  function applyLoad(d) {
+    S.me = d.me;
+    S.inventories = d.inventories || [];
+    S.counts = d.counts || [];
+    S.prices = d.prices || {};
+    S.people = d.people || [];
+    S.recent = d.recent || [];
+    S.sheetUrl = d.sheetUrl || '';
+    S.orderMultiple = d.orderMultiple || 1;
+    S.locked = !!d.locked;
+    S.items = new Map((d.items || []).map((it) => [it.id, it]));
+    if (!S.inventories.some((v) => v.id === S.inv)) S.inv = S.inventories.length ? S.inventories[0].id : '';
+    if (S.view === 'admin' && !isAdmin()) S.view = 'count';
+    if (S.view === 'order' && !(can('plan') || can('tick'))) S.view = 'count';
+  }
+  function showApp() {
+    $('#gate').hidden = true;
+    $('#app').hidden = false;
+    $('#sign-out').hidden = IN_APPS_SCRIPT;   // inside Apps Script you're signed in through Google itself
+    renderTabs(true);
+    refresh();
+  }
+  function boot() {
+    S.authLost = false;
+    S.lockedOut = false;
+    if (configMissing()) { gate('setup'); return; }
+    if (connected()) { gate('loading'); load(true); }
+    else gate('signin');
+  }
+
+  /* ======================= Units ======================= */
+  const unitOf = (it) => (['pack', 'pc', 'g'].includes(it && it.unit) ? it.unit : 'pack');
+  const unitLabel = (u, n) => UNIT_NAME[u][n === 1 ? 0 : 1];
+  // A quantity in the product's counting unit, also in packs, pieces and grams when the pack size is known.
+  function eq(it, qty) {
+    if (qty == null) return null;
+    const P = num(it.packPieces), G = num(it.packGrams), u = unitOf(it);
+    const out = { packs: null, pcs: null, grams: null };
+    if (u === 'pack') { out.packs = qty; if (P) out.pcs = qty * P; if (G) out.grams = qty * G; }
+    else if (u === 'pc') { out.pcs = qty; if (P) out.packs = qty / P; if (P && G) out.grams = qty * G / P; }
+    else { out.grams = qty; if (G) out.packs = qty / G; if (P && G) out.pcs = qty * P / G; }
+    return out;
+  }
+  const fmtGrams = (g) => (g >= 1000 ? nf.format(g / 1000) + ' kg' : nf0.format(g) + ' g');
+  function fmtQty(it, qty) {
+    if (qty == null) return '–';
+    return nf.format(qty) + ' ' + unitLabel(unitOf(it), qty);
+  }
+  // "≈ 325 pcs · 1.3 kg": the other units, for a quantity in the counting unit.
+  function eqText(it, qty) {
+    const e = eq(it, qty);
+    if (!e) return '';
+    const u = unitOf(it), parts = [];
+    if (u !== 'pack' && e.packs != null) parts.push(nf1.format(e.packs) + ' ' + unitLabel('pack', e.packs));
+    if (u !== 'pc' && e.pcs != null) parts.push(nf0.format(e.pcs) + ' pcs');
+    if (u !== 'g' && e.grams != null) parts.push(fmtGrams(e.grams));
+    return parts.length ? '≈ ' + parts.join(' · ') : '';
+  }
+  function packText(it) {
+    const P = num(it.packPieces), G = num(it.packGrams);
+    const parts = [];
+    if (P) parts.push(nf.format(P) + ' pcs');
+    if (G) parts.push(fmtGrams(G));
+    return parts.length ? 'Pack: ' + parts.join(' · ') : '';
+  }
+  const packsOf = (it, qty) => { const e = eq(it, qty); return e ? e.packs : null; };
+  // Min/max ordering in packs: below min, order up to max, rounded up to the order multiple ("in pairs").
+  function suggestion(it) {
+    const min = num(it.min), max = num(it.max);
+    const onHand = packsOf(it, num(it.count));
+    if (min == null || max == null || onHand == null) return null;
+    if (onHand >= min) return 0;
+    const m = S.orderMultiple || 1;
+    return Math.max(m, Math.ceil((max - onHand) / m - 1e-9) * m);
+  }
+  // Expiry batches [{m: "2027-03", q: 12}]: month and year. A batch counts as expired from the 1st of its month.
+  function batchesOf(it) {
+    try {
+      const a = JSON.parse(str(it && it.expiry) || '[]');
+      return Array.isArray(a) ? a.filter((b) => b && /^\d{4}-\d{2}$/.test(b.m)) : [];
+    } catch (e) { return []; }
+  }
+  function expiryDate(m) { const [y, mo] = m.split('-').map(Number); return new Date(y, mo - 1, 1); }
+  const fmtExpiry = (m) => { const d = expiryDate(m); return (d.getFullYear() === new Date().getFullYear() ? dayFmt : dayFmtY).format(d); };
+  function expiryBadge(it) {
+    const b = batchesOf(it)[0];
+    if (!b) return null;
+    const days = (expiryDate(b.m) - Date.now()) / 86400000;
+    if (days <= 0) return { text: 'Expired ' + fmtExpiry(b.m), cls: 'bad' };
+    if (days <= 60) return { text: 'Exp ' + fmtExpiry(b.m), cls: 'soon' };
+    return null;
+  }
+  const fmtDay = (iso) => { const d = new Date(iso); return isNaN(d) ? '' : (d.getFullYear() === new Date().getFullYear() ? dayFmt : dayFmtY).format(d); };
+  const fmtUntil = (iso) => {
+    const d = new Date(iso);
+    if (isNaN(d)) return '';
+    return d.toDateString() === new Date().toDateString() ? timeFmt.format(d) : whenFmt.format(d);
+  };
+  const fmtMoney = (n) => '$' + money.format(n);
+  // "$300.00/kg" or "$1.20/pc", to compare suppliers with different pack sizes.
+  function unitPrice(it, price) {
+    const G = num(it.packGrams), P = num(it.packPieces);
+    if (G) return fmtMoney(price / (G / 1000)) + '/kg';
+    if (P) return fmtMoney(price / P) + '/pc';
+    return '';
+  }
+
+  /* ======================= Products: sorting and search ======================= */
+  const secOf = (d) => str(d && d.section).trim().toUpperCase() || '—';
+  const labelOf = (d) => [str(d.product).trim() || 'Product', str(d.variant).trim()].filter(Boolean).join(' ');
+  function sortItems(arr) {
+    return arr.sort((a, b) => collator.compare(secOf(a), secOf(b)) || (num(a.order) ?? 1e9) - (num(b.order) ?? 1e9) ||
+      collator.compare(str(a.product), str(b.product)) || collator.compare(str(a.variant), str(b.variant)));
+  }
+  const invItems = (inv) => sortItems([...S.items.values()].filter((it) => it.inventory === inv));
+  function matchesSearch(it) {
+    if (!S.q.length) return true;
+    const hay = norm([it.product, it.variant, it.note, it.section, it.brand, it.supplier, it.barcode].join(' '));
+    return S.q.every((t) => hay.includes(t));
+  }
+  const codeKey = (s) => {
+    const c = str(s).replace(/[^0-9A-Za-z]/g, '');
+    return /^\d+$/.test(c) ? c.replace(/^0+(?=\d)/, '') : c.toUpperCase();
+  };
+  const codesOf = (d) => str(d && d.barcode).split(/[\s,;]+/).map(codeKey).filter(Boolean);
+  function findByBarcode(code) {
+    const k = codeKey(code);
+    if (!k) return [];
+    return [...S.items.values()].filter((d) => codesOf(d).includes(k)).map((d) => d.id);
+  }
+
+  /* ======================= Saving counts (in order, one request at a time) ======================= */
+  // Counting changes go through one queue so they reach the server in the order you made them.
+  // Typing waits until you pause; taps and scans go right away and are grouped when they pile up.
+  const typed = new Map();   // id -> {value, timer}: a number being typed
+  const queue = [];          // [{kind: 'set'|'add', id, value|qty}]
+  let sending = null;        // the ops being sent now
+  let pumping = false;
+  const hasPending = () => typed.size > 0 || queue.length > 0 || !!sending || orderPend.size > 0;
+
+  // What the box should show: the server value plus everything not yet confirmed.
+  function sessionVal(id) {
+    const t = typed.get(id);
+    if (t) return t.value;
+    const d = S.items.get(id);
+    let v = d ? num(d.sessionCount) : null;
+    const apply = (op) => {
+      if (op.id !== id) return;
+      if (op.kind === 'set') v = op.value;
+      else v = Math.max(0, round2((v || 0) + op.qty));
+    };
+    if (sending) sending.forEach(apply);
+    queue.forEach(apply);
+    return v;
+  }
+  function typeCount(id, value) {
+    const t = typed.get(id);
+    if (t) clearTimeout(t.timer);
+    typed.set(id, { value, timer: setTimeout(() => commitTyped(id), 900) });
+    S.keep.add(id);
+    refresh();
+  }
+  function commitTyped(id) {
+    const t = typed.get(id);
+    if (!t) return;
+    clearTimeout(t.timer);
+    typed.delete(id);
+    enqueue({ kind: 'set', id, value: t.value });
+  }
+  function addCount(id, qty) {
+    commitTyped(id);
+    enqueue({ kind: 'add', id, qty });
+    S.keep.add(id);
+  }
+  function setCount(id, value) {
+    commitTyped(id);
+    enqueue({ kind: 'set', id, value });
+    S.keep.add(id);
+  }
+  function enqueue(op) {
+    if (op.kind === 'set') {
+      for (let i = queue.length - 1; i >= 0; i--) if (queue[i].id === op.id) queue.splice(i, 1);   // a set replaces earlier changes
+    } else {
+      const last = queue[queue.length - 1];
+      if (last && last.kind === 'add' && last.id === op.id) { last.qty = round2(last.qty + op.qty); refresh(); pump(); return; }
+    }
+    queue.push(op);
+    refresh();
+    pump();
+  }
+  async function pump() {
+    if (pumping) return;
+    pumping = true;
+    S.inflight++;
+    try {
+      while (queue.length) {
+        let ops;
+        if (queue[0].kind === 'set') ops = [queue.shift()];
+        else { ops = []; while (queue.length && queue[0].kind === 'add' && ops.length < 50) ops.push(queue.shift()); }
+        sending = ops;
+        refresh();
+        try {
+          if (ops[0].kind === 'set') {
+            applyItem(await withRetry(() => api('countSet', { id: ops[0].id, value: ops[0].value })));
+          } else {
+            const sums = new Map();
+            ops.forEach((o) => sums.set(o.id, round2((sums.get(o.id) || 0) + o.qty)));
+            const adds = [...sums].filter(([, q]) => q !== 0).map(([id, qty]) => ({ id, qty }));
+            const batch = rid('b');   // the same batch id on a retry: the server applies it only once
+            if (adds.length) (await withRetry(() => api('countAdd', { adds, batch }))).forEach(applyItem);
+          }
+        } catch (e) {
+          sending = null;
+          if (e && (e.code === 'CLOSED' || e.code === 'DENIED' || e.code === 'AUTH')) queue.length = 0;
+          failed(e);
+        }
+        sending = null;
+      }
+    } finally {
+      pumping = false;
+      S.inflight--;
+      S.lastWriteAt = Date.now();
+      refresh();
+    }
+  }
+
+  /* ======================= Saving the order plan ======================= */
+  const orderPend = new Map();   // id -> {buyQty, timer}
+  const orderVal = (id) => (orderPend.has(id) ? orderPend.get(id).buyQty : num((S.items.get(id) || {}).buyQty));
+  function setOrder(id, buyQty) {
+    const p = orderPend.get(id);
+    if (p) clearTimeout(p.timer);
+    orderPend.set(id, { buyQty, timer: setTimeout(flushOrders, 800) });
+    refresh();
+  }
+  let orderFlushing = false;
+  async function flushOrders() {
+    if (orderFlushing) { setTimeout(flushOrders, 400); return; }
+    const entries = [...orderPend].map(([id, p]) => { clearTimeout(p.timer); return { id, buyQty: p.buyQty }; });
+    if (!entries.length) return;
+    orderFlushing = true;
+    try {
+      (await write('orderSet', { entries })).forEach(applyItem);
+      entries.forEach((e) => { const p = orderPend.get(e.id); if (p && p.buyQty === e.buyQty) orderPend.delete(e.id); });
+    } catch (e) {
+      entries.forEach((x) => orderPend.delete(x.id));
+      failed(e);
+    } finally {
+      orderFlushing = false;
+      refresh();
+    }
+  }
+
+  /* ======================= Rendering ======================= */
+  let rafPending = false;
+  function refresh() {
+    if (rafPending) return;
+    rafPending = true;
+    requestAnimationFrame(() => { rafPending = false; render(); });
+  }
+  function render() {
+    if (!S.loaded || !S.me) return;
+    const inv = currentInv();
+    $('#title').textContent = S.view === 'admin' ? 'Admin' : S.view === 'order' && orderMode() === 'list' ? 'Shopping list' : inv ? inv.name : 'Inventory';
+    renderWho();
+    renderLockbar();
+    renderInvs();
+    $('#sync').hidden = !S.syncedAt;
+    if (S.syncedAt) $('#sync-time').textContent = 'Updated ' + timeFmt.format(S.syncedAt);
+    renderTabs(false);
+    const v = S.view;
+    $('#view-count').hidden = v !== 'count';
+    $('#view-order').hidden = v !== 'order';
+    $('#view-admin').hidden = v !== 'admin';
+    if (v !== 'count') $('#status').hidden = true;
+    if (v === 'count') renderCount();
+    else if (v === 'order') renderOrder();
+    else renderAdmin();
+    if (S.sheetSync && !$('#panel').hidden) S.sheetSync();
+  }
+  function renderWho() {
+    const el = $('#who');
+    const key = S.me.email + S.me.role + S.me.name;
+    if (el.dataset.key === key) return;
+    el.dataset.key = key;
+    el.replaceChildren(h('b', { text: S.me.name || S.me.email }), h('span', { class: 'pill', text: ROLE_NAME[S.me.role] || S.me.role }));
+  }
+  function renderInvs() {
+    const el = $('#invs');
+    const show = S.inventories.length > 1 && S.view !== 'admin' && !(S.view === 'order' && orderMode() === 'list');
+    el.hidden = !show;
+    if (!show) return;
+    const key = S.inventories.map((v) => v.id + ':' + v.name).join('|');
+    if (el.dataset.key !== key) {
+      el.replaceChildren(...S.inventories.map((v) => h('button', { type: 'button', class: 'inv', 'data-inv': v.id, text: v.name })));
+      el.dataset.key = key;
+    }
+    for (const b of el.children) b.setAttribute('aria-pressed', String(b.dataset.inv === S.inv));
+  }
+  $('#invs').addEventListener('click', (e) => {
+    const b = e.target.closest('.inv');
+    if (!b || b.dataset.inv === S.inv) return;
+    S.inv = b.dataset.inv;
+    S.section = 'all';
+    S.keep.clear();
+    store.set('inv-current', S.inv);
+    render();
+  });
+
+  function renderTabs(force) {
+    const el = $('#tabs');
+    const want = [['count', 'Count', 'list'], ['scan', 'Scan', 'scan']];
+    if (can('plan') || can('tick')) want.push(['order', 'Order', 'cart']);
+    if (isAdmin()) want.push(['admin', 'Admin', 'gear']);
+    const key = want.map((w) => w[0]).join('|');
+    if (force || el.dataset.key !== key) {
+      el.replaceChildren(...want.map(([v, label, icon]) => v === 'scan'
+        ? h('button', { class: 'tab', type: 'button', 'data-tab': 'scan' }, h('span', { class: 'disc', icon }), h('span', { text: label }))
+        : h('button', { class: 'tab', type: 'button', 'data-tab': v, 'aria-pressed': 'false', icon },
+          h('span', { text: label }), v === 'order' ? h('span', { class: 'badge', hidden: true }) : null)));
+      el.dataset.key = key;
+    }
+    for (const b of el.querySelectorAll('[data-tab]')) if (b.dataset.tab !== 'scan') b.setAttribute('aria-pressed', String(b.dataset.tab === S.view));
+    const badge = $('.badge', el);
+    if (badge) {
+      const n = [...S.items.values()].filter((it) => it.onList && !it.bought).length;
+      badge.textContent = String(n);
+      badge.hidden = !n;
+    }
+  }
+  $('#tabs').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-tab]');
+    if (!b) return;
+    if (b.dataset.tab === 'scan') { openScanner({ mode: countingHere() ? 'count' : 'find' }); return; }
+    if (S.view === b.dataset.tab) return;
+    S.view = b.dataset.tab;
+    S.section = 'all';
+    S.filter = false;
+    S.keep.clear();
+    store.set('inv-view', S.view);
+    render();
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  });
+
+  /* ---------- Count view ---------- */
+  const rows = new Map(), groups = new Map();
+  function renderCount() {
+    const counting = countingHere();
+    const oc = openCount(S.inv);
+    renderStatus(oc, counting);
+    const all = invItems(S.inv);
+    const valOf = (it) => (counting ? sessionVal(it.id) : num(it.count));
+    const secs = new Map();
+    let done = 0;
+    for (const it of all) {
+      const s = secOf(it);
+      let g = secs.get(s);
+      if (!g) { g = { total: 0, done: 0, visible: [] }; secs.set(s, g); }
+      g.total++;
+      const v = valOf(it);
+      if (v !== null) { g.done++; done++; }
+      const hidden = S.filter && counting && v !== null && !S.keep.has(it.id);
+      if ((S.section === 'all' || S.section === s) && matchesSearch(it) && !hidden) g.visible.push(it);
+    }
+    if (S.section !== 'all' && !secs.has(S.section)) S.section = 'all';
+    renderBar({ show: all.length > 0, filterLabel: counting ? 'Hide counted' : '', secs, done, total: all.length, showCounts: counting });
+
+    const list = $('#view-count');
+    let anyVisible = false;
+    for (const g of secs.values()) if (g.visible.length) { anyVisible = true; break; }
+    let empty = $('#count-empty');
+    if (!empty) empty = h('div', { class: 'empty', id: 'count-empty' }, h('h2'), h('p'));
+    empty.hidden = anyVisible;
+    if (!anyVisible) {
+      const [t, p] = !S.inventories.length ? ['No inventories', 'You don’t have access to any inventory yet. Ask the admin.']
+        : !all.length ? ['No products yet', isAdmin() ? 'Tap “Add product” below to start this inventory.' : 'The admin hasn’t added products here yet.']
+          : ['Nothing matches', S.filter ? 'Everything that matches is counted. Turn off “Hide counted” or change the search.' : 'No product matches that search. Try fewer letters.'];
+      empty.firstChild.textContent = t;
+      empty.lastChild.textContent = p;
+    }
+    for (const [name, el] of groups) if (!secs.has(name)) { el.remove(); groups.delete(name); }
+    for (const [id, li] of rows) if (!S.items.has(id) || S.items.get(id).inventory !== S.inv) { li.remove(); rows.delete(id); }
+    const order = [empty];
+    for (const [name, g] of secs) {
+      let el = groups.get(name);
+      if (!el) { el = makeGroup(name); groups.set(name, el); }
+      el._meta.textContent = counting ? g.done + ' of ' + g.total + ' counted' : g.total + (g.total === 1 ? ' product' : ' products');
+      el._add.hidden = !can('edit');
+      el._add.textContent = '+ Add product to ' + name;
+      el._add.dataset.section = name === '—' ? '' : name;
+      el.hidden = g.visible.length === 0;
+      const want = g.visible.map((it) => {
+        let li = rows.get(it.id);
+        if (!li) { li = makeRow(it.id); rows.set(it.id, li); }
+        updateRow(li, it, counting);
+        return li;
+      });
+      syncChildren(el._ul, want);
+      order.push(el);
+    }
+    syncChildren(list, order);
+    renderFooter();
+  }
+
+  function renderStatus(oc, counting) {
+    const el = $('#status');
+    const inv = currentInv();
+    el.hidden = !inv;
+    if (!inv) return;
+    const key = JSON.stringify([S.inv, oc, counting, S.me.role, Math.floor(Date.now() / 60000), countProgress(oc)]);
+    if (el.dataset.key === key) return;
+    el.dataset.key = key;
+    el.className = 'status';
+    const kids = [];
+    if (!oc) {
+      if (isAdmin()) {
+        kids.push(h('p', { class: 'lead', text: 'No count open in ' + inv.name + '.' }),
+          h('p', { class: 'fine', text: 'Open a count to let your counters edit this inventory until the time you choose.' }),
+          h('div', { class: 'btn-row' }, h('button', { class: 'btn primary', type: 'button', text: 'Start a count', onclick: () => openCountSheet(inv, null) })));
+      } else if (can('count')) {
+        kids.push(h('p', { class: 'lead', text: 'Counting is closed.' }), h('p', { class: 'fine', text: 'The admin opens it when it’s time to count.' }));
+      } else {
+        const last = all(S.inv).map((it) => str(it.countedAt)).sort().pop();
+        kids.push(h('p', { class: 'lead', text: 'Stock from the last count' + (last ? ' (' + fmtDay(last) + ')' : '') + '.' }));
+      }
+    } else {
+      const late = isLate(oc);
+      const prog = countProgress(oc);
+      if (isAdmin()) {
+        el.classList.add(late ? 'is-late' : 'is-live');
+        const who = oc.counterNames && oc.counterNames.length ? oc.counterNames.join(', ') : 'only admins';
+        kids.push(h('p', { class: 'lead', text: late ? 'Count time is up (was until ' + fmtUntil(oc.until) + ').' : 'Count open until ' + fmtUntil(oc.until) + '.' }),
+          h('p', { class: 'fine', text: 'Counting: ' + who + ' · ' + prog }),
+          h('div', { class: 'btn-row' },
+            h('button', { class: 'btn primary', type: 'button', text: 'Finish & save', onclick: (e) => finishCount(e.currentTarget, oc) }),
+            h('button', { class: 'btn', type: 'button', text: 'Change', onclick: () => openCountSheet(inv, oc) }),
+            h('button', { class: 'btn danger', type: 'button', text: 'Discard', onclick: (e) => discardCount(e.currentTarget, oc) })));
+      } else if (counting) {
+        el.classList.add('is-live');
+        kids.push(h('p', { class: 'lead', text: 'You’re counting until ' + fmtUntil(oc.until) + '.' }),
+          h('p', { class: 'fine', text: prog + '. Tap + or type the number. Use Scan to count with a barcode.' }));
+      } else if (oc.canCount === false && can('count') && late) {
+        el.classList.add('is-late');
+        kids.push(h('p', { class: 'lead', text: 'Time’s up for this count.' }), h('p', { class: 'fine', text: 'Ask the admin to give you more time.' }));
+      } else if (can('count')) {
+        kids.push(h('p', { class: 'lead', text: 'A count is open, but not for you.' }), h('p', { class: 'fine', text: 'Ask the admin to add you to it.' }));
+      } else {
+        kids.push(h('p', { class: 'lead', text: 'A count is in progress until ' + fmtUntil(oc.until) + '.' }),
+          h('p', { class: 'fine', text: 'Stock below is from the last count.' }));
+      }
+    }
+    el.replaceChildren(...kids);
+  }
+  const all = (inv) => [...S.items.values()].filter((it) => it.inventory === inv);
+  function countProgress(oc) {
+    if (!oc) return '';
+    const items = all(oc.inventory);
+    const n = items.filter((it) => sessionVal(it.id) !== null).length;
+    return n + ' of ' + items.length + ' counted';
+  }
+
+  function renderBar(o) {
+    const bar = $('#bar');
+    bar.hidden = !o.show;
+    if (!o.show) return;
+    const f = $('#filter');
+    f.hidden = !o.filterLabel;
+    f.textContent = o.filterLabel;
+    f.setAttribute('aria-pressed', String(S.filter));
+    const chips = $('#chips');
+    const want = [['all', 'All', o.done, o.total]];
+    for (const [name, g] of o.secs) want.push([name, name, g.done, g.total]);
+    const key = want.map((w) => w[0]).join('|');
+    if (chips.dataset.key !== key) {
+      chips.replaceChildren(...want.map(([k, label]) => h('button', { type: 'button', class: 'chip', 'data-section': k }, h('b', { text: label }), h('small'))));
+      chips.dataset.key = key;
+    }
+    want.forEach(([k, label, d, t], i) => {
+      const b = chips.children[i];
+      b.setAttribute('aria-pressed', String(S.section === k));
+      b.classList.toggle('is-complete', o.showCounts && t > 0 && d === t);
+      b.lastChild.textContent = o.showCounts ? d + '/' + t : String(t);
+      b.setAttribute('aria-label', (k === 'all' ? 'All sections' : 'Section ' + label) + (o.showCounts ? ', ' + d + ' of ' + t + ' counted' : ', ' + t + ' products'));
+    });
+    chips.hidden = want.length <= 2;
+  }
+  $('#q').addEventListener('input', () => {
+    S.q = norm($('#q').value).split(/\s+/).filter(Boolean);
+    S.keep.clear();
+    refresh();
+  });
+  $('#filter').addEventListener('click', () => { S.filter = !S.filter; S.keep.clear(); refresh(); });
+  $('#chips').addEventListener('click', (e) => {
+    const b = e.target.closest('.chip');
+    if (!b) return;
+    S.section = b.dataset.section;
+    S.keep.clear();
+    render();
+    const head = $('.intro');
+    const target = head.offsetTop + head.offsetHeight;
+    if (window.scrollY > target) window.scrollTo({ top: target, behavior: reduceMotion ? 'auto' : 'smooth' });
+  });
+
+  function syncChildren(parent, want, fromIndex = 0) {
+    const cur = [...parent.children].slice(fromIndex);
+    let same = cur.length === want.length;
+    if (same) for (let i = 0; i < want.length; i++) if (cur[i] !== want[i]) { same = false; break; }
+    if (same) return;
+    const keep = new Set(want);
+    for (const c of cur) if (!keep.has(c)) c.remove();
+    let ref = parent.children[fromIndex] || null;
+    for (const node of want) {
+      if (node === ref) { ref = ref.nextElementSibling; continue; }
+      parent.insertBefore(node, ref);
+    }
+  }
+  function makeGroup(name) {
+    const meta = h('span', { class: 'group-meta' });
+    const ul = h('ul', { class: 'rows' });
+    const add = h('button', { type: 'button', class: 'link-btn add-here' });
+    const sec = h('section', { class: 'group' }, h('h2', { class: 'group-head' }, h('span', { class: 'tag', text: name }), meta), ul, add);
+    sec._meta = meta; sec._ul = ul; sec._add = add;
+    return sec;
+  }
+
+  // One product row: a cart (admins), the name, then a counter (while counting) or the stock.
+  // Tapping the cart puts the product on the shopping list and opens a "Buy" line under the row.
+  function makeRow(id) {
+    const cart = h('button', { class: 'cart', type: 'button', 'aria-pressed': 'false', 'aria-expanded': 'false', hidden: true });
+    const ominus = h('button', { class: 'step', type: 'button', text: '−' });
+    const oqty = h('input', { class: 'oqty', type: 'text', inputmode: 'numeric', placeholder: '0', autocomplete: 'off', enterkeyhint: 'done' });
+    const ounit = h('span', { class: 'unit' });
+    const oplus = h('button', { class: 'step', type: 'button', text: '+' });
+    const oinfo = h('span', { class: 'meta' });
+    const oremove = h('button', { class: 'link-btn', type: 'button', text: 'Remove' });
+    const oed = h('div', { class: 'order-ed', hidden: true },
+      h('span', { class: 'order-label', text: 'Buy' }),
+      h('div', { class: 'stepper' }, ominus, h('span', { class: 'qty-wrap' }, oqty, ounit), oplus),
+      h('div', { class: 'order-info' }, oinfo, oremove));
+    const thumb = h('img', { class: 'thumb', alt: '', hidden: true });
+    const pname = h('span', { class: 'pname' });
+    const variant = h('span', { class: 'variant' });
+    const badge = h('span', { class: 'badge-s', hidden: true });
+    const exp = h('span', { class: 'badge-s', hidden: true });
+    const meta = h('span', { class: 'meta' });
+    const name = h('button', { type: 'button', class: 'row-name' }, thumb,
+      h('span', { class: 'name-text' }, h('span', { class: 'line1' }, pname, variant, badge, exp), meta));
+    const minus = h('button', { class: 'step minus', type: 'button', text: '−' });
+    const qty = h('input', { class: 'qty', type: 'text', inputmode: 'decimal', placeholder: '–', autocomplete: 'off', enterkeyhint: 'done' });
+    const unit = h('span', { class: 'unit' });
+    const plus = h('button', { class: 'step plus', type: 'button', text: '+' });
+    const stepper = h('div', { class: 'stepper' }, minus, h('span', { class: 'qty-wrap' }, qty, unit), plus);
+    const stockB = h('b');
+    const stockU = h('span', { class: 'unit' });
+    const stock = h('span', { class: 'stock' }, stockB, stockU);
+    const li = h('li', { class: 'row', 'data-id': id }, h('div', { class: 'row-main' }, cart, name, stepper, stock), oed);
+    Object.assign(li, { _thumb: thumb, _pname: pname, _variant: variant, _badge: badge, _exp: exp, _meta: meta, _name: name,
+      _minus: minus, _qty: qty, _unit: unit, _plus: plus, _stepper: stepper, _stock: stock, _stockB: stockB, _stockU: stockU,
+      _cart: cart, _oed: oed, _ominus: ominus, _oqty: oqty, _ounit: ounit, _oplus: oplus, _oinfo: oinfo, _oremove: oremove });
+    return li;
+  }
+  // The cart and the "Buy" line of a row (only for people who plan orders).
+  function updateBuy(li, it) {
+    const canPlan = can('plan');
+    li._cart.hidden = !canPlan;
+    if (!canPlan) { li._oed.hidden = true; return; }
+    const label = labelOf(it);
+    const q = orderVal(it.id) || 0;
+    const key = q ? 'n' + q : 'icon';
+    if (li._cart.dataset.key !== key) {
+      li._cart.dataset.key = key;
+      if (q) li._cart.textContent = String(q);
+      else li._cart.innerHTML = ICON.cart;
+    }
+    const open = S.orderOpen === it.id;
+    li._cart.setAttribute('aria-pressed', String(q > 0));
+    li._cart.setAttribute('aria-expanded', String(open));
+    li._cart.setAttribute('aria-label', q ? 'Buying ' + q + ' packs of ' + label + '. Tap to change.' : 'Add ' + label + ' to the shopping list');
+    li._oed.hidden = !open;
+    if (!open) return;
+    if (document.activeElement !== li._oqty) li._oqty.value = q ? String(q) : '';
+    li._ounit.textContent = unitLabel('pack', q);
+    const s = suggestion(it);
+    const e = eq({ unit: 'pack', packPieces: it.packPieces, packGrams: it.packGrams }, q);
+    const parts = [];
+    if (q && e && e.pcs != null) parts.push('≈ ' + nf0.format(e.pcs) + ' pcs');
+    if (q && e && e.grams != null) parts.push(fmtGrams(e.grams));
+    parts.push(num(it.min) !== null && num(it.max) !== null ? 'min ' + it.min + ' · max ' + it.max + (s ? ' · suggested ' + s : '') : 'no min/max yet');
+    li._oinfo.textContent = parts.join(' · ');
+    li._oremove.hidden = !q;
+    li._oed.classList.toggle('is-pending', orderPend.has(it.id));
+    li._oqty.setAttribute('aria-label', 'Packs to buy of ' + label);
+    li._ominus.setAttribute('aria-label', (S.orderMultiple || 1) + ' packs fewer of ' + label);
+    li._oplus.setAttribute('aria-label', (S.orderMultiple || 1) + ' packs more of ' + label);
+    li._oremove.setAttribute('aria-label', 'Remove ' + label + ' from the shopping list');
+  }
+  function updateRow(li, it, counting) {
+    const label = labelOf(it);
+    const u = unitOf(it);
+    const v = counting ? sessionVal(it.id) : num(it.count);
+    const showsStock = !counting && 'count' in it;
+    li._pname.textContent = str(it.product) || 'Unnamed product';
+    li._variant.textContent = str(it.variant);
+    li._variant.hidden = !str(it.variant);
+    const low = !counting && can('plan') && v !== 0 && suggestion(it) > 0;   // below its minimum
+    li._badge.hidden = !(low || (v === 0 && (counting || showsStock)));
+    li._badge.textContent = v === 0 ? 'Out' : 'Low';
+    li._badge.className = v === 0 ? 'badge-s bad' : 'badge-s soon';
+    const xb = expiryBadge(it);
+    li._exp.hidden = !xb;
+    if (xb) { li._exp.textContent = xb.text; li._exp.className = 'badge-s ' + xb.cls; }
+    let meta;
+    if (counting) {
+      const before = isAdmin() && num(it.count) !== null ? 'Before: ' + fmtQty(it, num(it.count)) : '';
+      meta = [before, v !== null ? eqText(it, v) : packText(it)].filter(Boolean).join(' · ');
+    } else if (showsStock) {
+      meta = [v !== null ? eqText(it, v) : 'Not counted yet', it.countedAt ? 'counted ' + fmtDay(it.countedAt) : '', str(it.brand)].filter(Boolean).join(' · ');
+    } else {
+      meta = [str(it.brand), packText(it)].filter(Boolean).join(' · ');
+    }
+    li._meta.textContent = meta;
+    li._meta.hidden = !meta;
+    li._stepper.hidden = !counting;
+    li._stock.hidden = !showsStock;
+    if (counting) {
+      if (document.activeElement !== li._qty) li._qty.value = v === null ? '' : String(v);
+      li._unit.textContent = unitLabel(u, v);
+      li._stepper.classList.toggle('is-counted', v !== null && v > 0);
+      li._stepper.classList.toggle('is-out', v === 0);
+      li._stepper.classList.toggle('is-pending', typed.has(it.id) || queue.some((o) => o.id === it.id) || !!(sending && sending.some((o) => o.id === it.id)));
+      li._qty.setAttribute('aria-label', 'Count of ' + label + ' in ' + unitLabel(u, 2));
+      li._minus.setAttribute('aria-label', 'One ' + unitLabel(u, 1) + ' fewer ' + label);
+      li._plus.setAttribute('aria-label', 'One ' + unitLabel(u, 1) + ' more ' + label);
+    } else if (showsStock) {
+      li._stockB.textContent = v === null ? '–' : nf.format(v);
+      li._stockU.textContent = unitLabel(u, v);
+      li._stock.classList.toggle('is-out', v === 0);
+      li._stock.setAttribute('aria-label', 'Stock: ' + (v === null ? 'not counted' : fmtQty(it, v)));
+    }
+    li._name.setAttribute('aria-label', 'Open ' + label);
+    showThumb(li._thumb, it.id, str(it.image), false);
+    updateBuy(li, it);
+  }
+
+  function parseAmount(s) {
+    const t = str(s).replace(',', '.').trim();
+    if (t === '') return null;
+    const n = Number(t);
+    if (!isFinite(n) || n < 0) return NaN;
+    return round2(n);
+  }
+  const countView = $('#view-count');
+  countView.addEventListener('click', (e) => {
+    const t = e.target.closest('button');
+    if (!t) return;
+    if (t.classList.contains('add-here')) { openEditor(null, { section: t.dataset.section }); return; }
+    const li = t.closest('.row');
+    if (!li) return;
+    const id = li.dataset.id;
+    const m = S.orderMultiple || 1;
+    if (t === li._plus) addCount(id, 1);
+    else if (t === li._minus) {
+      const v = sessionVal(id);
+      if (v === null) setCount(id, 0);
+      else if (v > 0) addCount(id, -Math.min(1, v));
+    } else if (t === li._name) openItem(id);
+    else if (t === li._cart) {
+      // Not on the list yet: add it with the min/max suggestion (or one pair) and open the Buy line.
+      // Already on the list: open or close its Buy line.
+      if (!(orderVal(id) > 0)) {
+        const s = suggestion(S.items.get(id) || {});
+        setOrder(id, s > 0 ? s : m);
+        S.orderOpen = id;
+      } else {
+        S.orderOpen = S.orderOpen === id ? null : id;
+      }
+      S.keep.add(id);
+      refresh();
+    } else if (t === li._oplus) setOrder(id, Math.ceil(((orderVal(id) || 0) + 1) / m) * m);
+    else if (t === li._ominus) setOrder(id, Math.max(0, Math.floor(((orderVal(id) || 0) - 1) / m) * m));
+    else if (t === li._oremove) { setOrder(id, 0); S.orderOpen = null; refresh(); }
+  });
+  countView.addEventListener('input', (e) => {
+    const el = e.target;
+    if (!el.classList) return;
+    if (el.classList.contains('oqty')) {
+      const digits = el.value.replace(/\D+/g, '').slice(0, 5);
+      if (digits !== el.value) el.value = digits;
+      setOrder(el.closest('.row').dataset.id, digits === '' ? 0 : parseInt(digits, 10));
+      return;
+    }
+    if (!el.classList.contains('qty')) return;
+    const clean = el.value.replace(/[^0-9.,]/g, '').slice(0, 9);
+    if (clean !== el.value) el.value = clean;
+    const n = parseAmount(clean);
+    if (Number.isNaN(n)) return;
+    typeCount(el.closest('.row').dataset.id, n);
+  });
+  countView.addEventListener('focusin', (e) => {
+    const el = e.target;
+    if (el.classList && (el.classList.contains('qty') || el.classList.contains('oqty'))) requestAnimationFrame(() => { try { el.select(); } catch (_) { /* ignore */ } });
+  });
+  countView.addEventListener('focusout', (e) => {
+    const el = e.target;
+    if (!el.classList) return;
+    if (el.classList.contains('qty')) { commitTyped(el.closest('.row').dataset.id); refresh(); }
+    if (el.classList.contains('oqty')) {
+      const id = el.closest('.row').dataset.id;
+      const q = orderVal(id) || 0;
+      const m = S.orderMultiple || 1;
+      if (q % m) setOrder(id, Math.ceil(q / m) * m);   // typed 3 with pairs: becomes 4
+      refresh();
+    }
+  });
+  countView.addEventListener('keydown', (e) => {
+    const el = e.target;
+    if (el.classList && (el.classList.contains('qty') || el.classList.contains('oqty')) && e.key === 'Enter') { e.preventDefault(); el.blur(); }
+  });
+
+  function renderFooter() {
+    const f = $('#footer');
+    const show = S.view === 'count' && can('edit') && !!currentInv();
+    f.hidden = !show;
+    if (!show) return;
+    if (!f.dataset.ready) {
+      $('#footer-btns').replaceChildren(
+        h('button', { class: 'btn primary', type: 'button', text: 'Add product', onclick: () => openEditor(null, {}) }));
+      $('#footer-hint').textContent = 'Tap a product to see it, edit it, add a photo or link its barcode.';
+      f.dataset.ready = '1';
+    }
+  }
+
+  /* ---------- Count actions (admin) ---------- */
+  function arm(btn, armedText, label) {
+    btn.classList.add('armed');
+    btn.textContent = armedText;
+    clearTimeout(btn._armT);
+    btn._armT = setTimeout(() => disarm(btn, label), 4500);
+  }
+  function disarm(btn, label) {
+    clearTimeout(btn._armT);
+    btn.classList.remove('armed');
+    btn.textContent = label;
+  }
+  async function adminCall(action, args, okMsg) {
+    try {
+      await waitForWrites();
+      const d = await write(action, args);
+      applyLoad(d);
+      if (okMsg) toast(typeof okMsg === 'function' ? okMsg(d) : okMsg);
+      return d;
+    } catch (e) { failed(e); return null; }
+    finally { refresh(); }
+  }
+  async function waitForWrites() {
+    typed.forEach((_, id) => commitTyped(id));
+    for (let i = 0; i < 100 && (queue.length || sending || pumping); i++) await sleep(150);
+  }
+  async function finishCount(btn, oc) {
+    if (!btn.classList.contains('armed')) { arm(btn, 'Tap again to save', 'Finish & save'); return; }
+    disarm(btn, 'Saving…');
+    btn.disabled = true;
+    await adminCall('countFinish', { id: oc.id }, (d) => {
+      const r = (d.recent || []).find((x) => x.id === oc.id);
+      return 'Count saved: ' + (r ? r.items : 0) + ' products updated.';
+    });
+  }
+  async function discardCount(btn, oc) {
+    if (!btn.classList.contains('armed')) { arm(btn, 'Tap again to discard', 'Discard'); return; }
+    disarm(btn, 'Discarding…');
+    btn.disabled = true;
+    await adminCall('countDiscard', { id: oc.id }, 'Count discarded. Stock didn’t change.');
+  }
+  function localInput(d) {
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+  function defaultUntil() {
+    const d = new Date();
+    if (d.getHours() < 20) { d.setHours(21, 0, 0, 0); return d; }
+    d.setMinutes(d.getMinutes() < 30 ? 30 : 60, 0, 0);
+    d.setHours(d.getHours() + 3);
+    return d;
+  }
+  // Start a count (or change who counts and until when).
+  function openCountSheet(inv, oc) {
+    const eligible = S.people.filter((p) => p.active && p.role === 'counter' && (p.inventories === '*' || (p.inventories || []).includes(inv.id)));
+    const chosen = new Set((oc && oc.counters) || []);
+    const boxes = eligible.map((p) => h('label', { class: 'check' },
+      h('input', { type: 'checkbox', value: p.email, checked: chosen.has(p.email) }),
+      h('span', null, h('span', { text: p.name || p.email }), ' ', h('small', { text: p.name ? p.email : '' }))));
+    const until = h('input', { type: 'datetime-local', id: 'count-until', value: localInput(oc ? new Date(oc.until) : defaultUntil()) });
+    const go = h('button', { class: 'btn primary', type: 'submit', text: oc ? 'Save changes' : 'Start count' });
+    const form = h('form', { class: 'sheet-form', autocomplete: 'off' },
+      h('h2', { text: (oc ? 'Change count · ' : 'Start a count · ') + inv.name }),
+      h('h3', { text: 'Who counts' }),
+      eligible.length ? h('div', { class: 'checks' }, ...boxes)
+        : h('p', { class: 'fine', text: 'No counters have access to ' + inv.name + ' yet. Add them in Admin > People. You can still count yourself.' }),
+      h('label', { class: 'field' }, h('span', { text: 'Counting closes at' }), until),
+      h('p', { class: 'fine', text: 'Counters can only edit this inventory until then. Admins can count while it’s open. Nothing changes the stock until you tap Finish & save.' }),
+      h('div', { class: 'edit-actions' }, go, h('button', { class: 'btn', type: 'button', 'data-close': '', text: 'Cancel' })));
+    form.style.display = 'grid';
+    form.style.gap = '12px';
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const t = new Date(until.value);
+      if (isNaN(t) || t <= new Date()) { toast('Choose a closing time later than now.'); return; }
+      const counters = [...form.querySelectorAll('input[type=checkbox]:checked')].map((x) => x.value);
+      go.disabled = true;
+      const d = oc
+        ? await adminCall('countUpdate', { id: oc.id, counters, until: t.toISOString() }, 'Count updated.')
+        : await adminCall('countStart', { inventory: inv.id, counters, until: t.toISOString() }, 'Count started. Counters can begin.');
+      go.disabled = false;
+      if (d) closeSheets();
+    });
+    showPanel([form]);
+  }
+
+  /* ---------- Order view ---------- */
+  const orderMode = () => (can('plan') && can('tick') ? S.orderMode : can('plan') ? 'plan' : 'list');
+  const planRows = new Map(), planGroups = new Map(), listRows = new Map(), listGroups = new Map();
+  function renderOrder() {
+    const root = $('#view-order');
+    if (!root._ready) {
+      root._seg = h('div', { class: 'seg', role: 'group', 'aria-label': 'Order view' },
+        h('button', { type: 'button', 'data-mode': 'plan', text: 'Plan' }),
+        h('button', { type: 'button', 'data-mode': 'list', text: 'Shopping list' }));
+      root._tools = h('div', { class: 'btn-row' });
+      root._info = h('p', { class: 'fine' });
+      root._head = h('div', { class: 'view-head' }, root._seg, root._info, root._tools);
+      root._plan = h('div', { class: 'list' });
+      root._list = h('div', { class: 'list' });
+      root._empty = h('div', { class: 'empty' }, h('h2'), h('p'));
+      root.append(root._head, root._empty, root._plan, root._list);
+      root._seg.addEventListener('click', (e) => {
+        const b = e.target.closest('button');
+        if (!b) return;
+        S.orderMode = b.dataset.mode;
+        store.set('inv-order-mode', S.orderMode);
+        S.section = 'all';
+        render();
+      });
+      root._ready = true;
+    }
+    const mode = orderMode();
+    root._seg.hidden = !(can('plan') && can('tick'));
+    for (const b of root._seg.children) b.setAttribute('aria-pressed', String(b.dataset.mode === mode));
+    root._plan.hidden = mode !== 'plan';
+    root._list.hidden = mode !== 'list';
+    $('#footer').hidden = true;
+    if (mode === 'plan') renderPlan(root); else renderList(root);
+  }
+
+  function renderPlan(root) {
+    const items = invItems(S.inv);
+    const secs = new Map();
+    let listed = 0;
+    for (const it of items) {
+      const s = secOf(it);
+      let g = secs.get(s);
+      if (!g) { g = { total: 0, done: 0, visible: [] }; secs.set(s, g); }
+      g.total++;
+      const q = orderVal(it.id);
+      if (q) { g.done++; listed++; }
+      if ((S.section === 'all' || S.section === s) && matchesSearch(it) && (!S.filter || q || S.keep.has(it.id))) g.visible.push(it);
+    }
+    if (S.section !== 'all' && !secs.has(S.section)) S.section = 'all';
+    renderBar({ show: items.length > 0, filterLabel: 'On list only', secs, done: listed, total: items.length, showCounts: false });
+    const sugg = items.filter((it) => suggestion(it) > 0);
+    root._info.textContent = listed + (listed === 1 ? ' product' : ' products') + ' on the list · orders round up to ' +
+      (S.orderMultiple === 2 ? 'pairs' : 'multiples of ' + S.orderMultiple) + ' of packs';
+    if (!root._planTools) {
+      root._fill = h('button', { class: 'btn primary', type: 'button', text: 'Fill from min/max' });
+      root._clear = h('button', { class: 'btn danger', type: 'button', text: 'Clear whole list' });
+      root._fill.addEventListener('click', () => fillFromMinMax(root._fill));
+      root._clear.addEventListener('click', () => clearList(root._clear));
+      root._planTools = [root._fill, root._clear];
+    }
+    root._tools.replaceChildren(...root._planTools);
+    root._fill.disabled = !sugg.length;
+    root._fill.title = sugg.length ? sugg.length + ' products are below their minimum' : 'No product is below its minimum';
+    let any = false;
+    for (const g of secs.values()) if (g.visible.length) { any = true; break; }
+    root._empty.hidden = any;
+    if (!any) {
+      root._empty.firstChild.textContent = items.length ? 'Nothing matches' : 'No products yet';
+      root._empty.lastChild.textContent = items.length ? 'Change the search or turn off “On list only”.' : 'Add products in Count first.';
+    }
+    for (const [name, el] of planGroups) if (!secs.has(name)) { el.remove(); planGroups.delete(name); }
+    for (const [id, li] of planRows) if (!S.items.has(id) || S.items.get(id).inventory !== S.inv) { li.remove(); planRows.delete(id); }
+    const order = [];
+    for (const [name, g] of secs) {
+      let el = planGroups.get(name);
+      if (!el) { el = makeGroup(name); el._add.remove(); planGroups.set(name, el); }
+      el._meta.textContent = g.done ? g.done + ' to order' : '';
+      el.hidden = !g.visible.length;
+      syncChildren(el._ul, g.visible.map((it) => {
+        let li = planRows.get(it.id);
+        if (!li) { li = makePlanRow(it.id); planRows.set(it.id, li); }
+        updatePlanRow(li, it);
+        return li;
+      }));
+      order.push(el);
+    }
+    syncChildren(root._plan, order);
+  }
+  function makePlanRow(id) {
+    const li = makeRow(id);
+    li._stock.remove();
+    li._cart.remove();   // the plan's own stepper is the order here
+    li._oed.remove();
+    li._qty.setAttribute('inputmode', 'numeric');
+    return li;
+  }
+  function updatePlanRow(li, it) {
+    const q = orderVal(it.id);
+    const s = suggestion(it);
+    const stock = num(it.count);
+    li._pname.textContent = str(it.product) || 'Unnamed product';
+    li._variant.textContent = str(it.variant);
+    li._variant.hidden = !str(it.variant);
+    li._badge.hidden = !(s > 0);
+    li._badge.textContent = 'Low';
+    li._badge.className = 'badge-s soon';
+    li._exp.hidden = true;
+    const packs = packsOf(it, stock);
+    const parts = [];
+    parts.push('Stock ' + (stock === null ? 'not counted' : fmtQty(it, stock) + (unitOf(it) !== 'pack' && packs != null ? ' (≈ ' + nf1.format(packs) + ' packs)' : '')));
+    if (num(it.min) !== null && num(it.max) !== null) parts.push('min ' + it.min + ' · max ' + it.max + (s ? ' · suggested ' + s : ''));
+    else parts.push('no min/max yet');
+    li._meta.textContent = parts.join(' · ');
+    if (document.activeElement !== li._qty) li._qty.value = q ? String(q) : '';
+    li._unit.textContent = unitLabel('pack', q || 0);
+    li._stepper.classList.toggle('is-counted', !!q);
+    li._stepper.classList.remove('is-out');
+    li._stepper.classList.toggle('is-pending', orderPend.has(it.id));
+    li._qty.setAttribute('aria-label', 'Packs to order of ' + labelOf(it));
+    li._minus.setAttribute('aria-label', S.orderMultiple + ' packs fewer ' + labelOf(it));
+    li._plus.setAttribute('aria-label', S.orderMultiple + ' packs more ' + labelOf(it));
+    li._name.setAttribute('aria-label', 'Open ' + labelOf(it));
+    showThumb(li._thumb, it.id, str(it.image), false);
+  }
+  const orderView = $('#view-order');
+  orderView.addEventListener('click', (e) => {
+    const t = e.target.closest('button');
+    if (!t) return;
+    const li = t.closest('.row');
+    if (!li) return;
+    const id = li.dataset.id;
+    const m = S.orderMultiple || 1;
+    if (t === li._plus) { const q = orderVal(id) || 0; setOrder(id, Math.ceil((q + 1) / m) * m); S.keep.add(id); }
+    else if (t === li._minus) { const q = orderVal(id) || 0; setOrder(id, Math.max(0, Math.floor((q - 1) / m) * m)); S.keep.add(id); }
+    else if (t === li._name) openItem(id);
+    else if (t === li._tick) tickItem(id);
+  });
+  orderView.addEventListener('input', (e) => {
+    const el = e.target;
+    if (!el.classList || !el.classList.contains('qty')) return;
+    const digits = el.value.replace(/\D+/g, '').slice(0, 5);
+    if (digits !== el.value) el.value = digits;
+    const li = el.closest('.row');
+    S.keep.add(li.dataset.id);
+    setOrder(li.dataset.id, digits === '' ? 0 : parseInt(digits, 10));
+  });
+  orderView.addEventListener('focusin', (e) => {
+    const el = e.target;
+    if (el.classList && el.classList.contains('qty')) requestAnimationFrame(() => { try { el.select(); } catch (_) { /* ignore */ } });
+  });
+  orderView.addEventListener('focusout', (e) => {
+    const el = e.target;
+    if (el.classList && el.classList.contains('qty')) {
+      const li = el.closest('.row');
+      const q = orderVal(li.dataset.id) || 0;
+      const m = S.orderMultiple || 1;
+      if (q % m) setOrder(li.dataset.id, Math.ceil(q / m) * m);   // typed 3 with pairs: becomes 4
+      refresh();
+    }
+  });
+
+  async function fillFromMinMax(btn) {
+    const entries = invItems(S.inv).map((it) => ({ id: it.id, buyQty: suggestion(it) })).filter((x) => x.buyQty > 0);
+    if (!entries.length) { toast('No product is below its minimum.'); return; }
+    if (!btn.classList.contains('armed')) { arm(btn, 'Tap again to fill ' + entries.length, 'Fill from min/max'); return; }
+    disarm(btn, 'Fill from min/max');
+    btn.disabled = true;
+    try {
+      (await write('orderSet', { entries })).forEach(applyItem);
+      toast('Added ' + entries.length + (entries.length === 1 ? ' product' : ' products') + ' from min/max.');
+    } catch (e) { failed(e); }
+    btn.disabled = false;
+    refresh();
+  }
+  async function clearList(btn) {
+    const n = [...S.items.values()].filter((it) => it.onList).length;
+    if (!n) { toast('The list is already empty.'); return; }
+    if (!btn.classList.contains('armed')) { arm(btn, 'Tap again to clear ' + n, 'Clear whole list'); return; }
+    disarm(btn, 'Clear whole list');
+    btn.disabled = true;
+    orderPend.forEach((p) => clearTimeout(p.timer));
+    orderPend.clear();
+    await adminCall('orderClear', {}, 'Order list cleared.');
+    btn.disabled = false;
+  }
+
+  // Shopping list: everything on the list, grouped by supplier, with a tick for each.
+  function listGroupsOf() {
+    const map = new Map();
+    for (const it of S.items.values()) {
+      if (!it.onList) continue;
+      const name = str(it.supplier) || str(it.brand) || 'No supplier yet';
+      const key = norm(name) + (str(it.supplier) || str(it.brand) ? '' : '~');
+      let g = map.get(key);
+      if (!g) { g = { key, name, items: [] }; map.set(key, g); }
+      g.items.push(it);
+    }
+    const out = [...map.values()].sort((a, b) => (a.key.endsWith('~') ? 1 : 0) - (b.key.endsWith('~') ? 1 : 0) || collator.compare(a.name, b.name));
+    out.forEach((g) => g.items.sort((a, b) => collator.compare(labelOf(a), labelOf(b))));
+    return out;
+  }
+  function renderList(root) {
+    $('#bar').hidden = true;
+    const gs = listGroupsOf();
+    const total = gs.reduce((n, g) => n + g.items.length, 0);
+    const bought = gs.reduce((n, g) => n + g.items.filter((it) => it.bought).length, 0);
+    root._info.textContent = total ? bought + ' of ' + total + ' bought' + (can('prices') ? ' · prices are per pack' : '') : '';
+    if (!root._listTools) {
+      const copy = h('button', { class: 'btn primary', type: 'button', text: 'Copy list' });
+      const wa = h('a', { class: 'btn', href: 'https://wa.me/', target: '_blank', rel: 'noopener', text: 'Send by WhatsApp' });
+      const findBtn = h('button', { class: 'btn', type: 'button', text: 'Find by barcode' });
+      copy.addEventListener('click', () => copyText(listText(listGroupsOf()), 'the list'));
+      findBtn.addEventListener('click', () => openScanner({ mode: 'find' }));
+      root._listTools = [copy, wa, findBtn];
+      root._wa = wa;
+    }
+    root._tools.replaceChildren(...root._listTools);
+    root._tools.hidden = !total;
+    if (total) root._wa.href = 'https://wa.me/?text=' + encodeURIComponent(listText(gs));
+    root._empty.hidden = !!total;
+    if (!total) {
+      root._empty.firstChild.textContent = 'Nothing to buy';
+      root._empty.lastChild.textContent = can('plan') ? 'Add products in Plan, or tap “Fill from min/max”.' : 'The admin hasn’t added anything to the list yet.';
+    }
+    const live = new Set(gs.map((g) => g.key));
+    for (const [k, el] of listGroups) if (!live.has(k)) { el.remove(); listGroups.delete(k); }
+    const ids = new Set();
+    gs.forEach((g) => g.items.forEach((it) => ids.add(it.id)));
+    for (const [id, li] of listRows) if (!ids.has(id)) { li.remove(); listRows.delete(id); }
+    const order = [];
+    for (const g of gs) {
+      let el = listGroups.get(g.key);
+      if (!el) {
+        const tag = h('span', { class: 'brand-tag' });
+        const meta = h('span', { class: 'group-meta' });
+        const ul = h('ul', { class: 'rows' });
+        el = h('section', { class: 'group' }, h('h2', { class: 'group-head' }, tag, meta), ul);
+        el._tag = tag; el._meta = meta; el._ul = ul;
+        listGroups.set(g.key, el);
+      }
+      el._tag.textContent = g.name;
+      const b = g.items.filter((it) => it.bought).length;
+      el._meta.textContent = b + ' of ' + g.items.length;
+      syncChildren(el._ul, g.items.map((it) => {
+        let li = listRows.get(it.id);
+        if (!li) { li = makeListRow(it.id); listRows.set(it.id, li); }
+        updateListRow(li, it);
+        return li;
+      }));
+      order.push(el);
+    }
+    syncChildren(root._list, order);
+  }
+  function makeListRow(id) {
+    const tickB = h('button', { class: 'tick', type: 'button', 'aria-pressed': 'false', icon: 'check' });
+    const pname = h('span', { class: 'pname' });
+    const variant = h('span', { class: 'variant' });
+    const meta = h('span', { class: 'meta' });
+    const name = h('button', { type: 'button', class: 'row-name' }, h('span', { class: 'name-text' }, h('span', { class: 'line1' }, pname, variant), meta));
+    const qB = h('b');
+    const qU = h('span', { class: 'unit' });
+    const li = h('li', { class: 'row', 'data-id': id }, h('div', { class: 'row-main' }, tickB, name, h('span', { class: 'buy-qty' }, qB, qU)));
+    Object.assign(li, { _tick: tickB, _pname: pname, _variant: variant, _meta: meta, _name: name, _qB: qB, _qU: qU });
+    return li;
+  }
+  function updateListRow(li, it) {
+    const label = labelOf(it);
+    const q = it.bought && num(it.boughtQty) !== null ? num(it.boughtQty) : num(it.buyQty);
+    li.classList.toggle('is-bought', !!it.bought);
+    li._pname.textContent = str(it.product) || 'Unnamed product';
+    li._variant.textContent = str(it.variant);
+    li._variant.hidden = !str(it.variant);
+    const p = S.prices[it.id];
+    const parts = [];
+    if (it.bought) parts.push('Bought' + (num(it.boughtQty) !== null && num(it.boughtQty) !== num(it.buyQty) ? ' ' + it.boughtQty + ' of ' + it.buyQty : ''));
+    if (p && can('prices')) parts.push('Last ' + fmtMoney(p.price) + '/pack' + (unitPrice(it, p.price) ? ' (' + unitPrice(it, p.price) + ')' : '') + ' · ' + fmtDay(p.date));
+    if (S.inventories.length > 1) parts.push(invName(it.inventory) + ' ' + secOf(it));
+    else parts.push(secOf(it));
+    li._meta.textContent = parts.join(' · ');
+    li._qB.textContent = q === null ? '–' : nf.format(q);
+    li._qU.textContent = unitLabel('pack', q);
+    li._tick.setAttribute('aria-pressed', String(!!it.bought));
+    li._tick.setAttribute('aria-label', (it.bought ? 'Bought: ' : 'Mark as bought: ') + label);
+    li._name.setAttribute('aria-label', 'Open ' + label + ' to add the price');
+  }
+  async function tickItem(id) {
+    const it = S.items.get(id);
+    if (!it) return;
+    const next = !it.bought;
+    const prev = Object.assign({}, it);
+    applyItem(Object.assign({}, it, { bought: next, boughtQty: next ? it.buyQty : null }));
+    refresh();
+    try {
+      const r = await write('orderTick', { id, bought: next });
+      applyItem(r.item);
+      if (next && can('prices')) toast('Bought ' + labelOf(it) + '.', { action: 'Add price', fn: () => openItem(id) });
+    } catch (e) {
+      applyItem(prev);
+      failed(e);
+    }
+    refresh();
+  }
+  function listText(gs) {
+    const lines = ['Shopping list · ' + dayFmtY.format(new Date())];
+    for (const g of gs) {
+      lines.push('', g.name.toUpperCase());
+      for (const it of g.items) {
+        const q = num(it.buyQty);
+        lines.push((it.bought ? '✓ ' : '• ') + labelOf(it) + (q !== null ? ' — ' + q + ' ' + unitLabel('pack', q) : ''));
+      }
+    }
+    return lines.join('\n');
+  }
+  async function copyText(text, what) {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast('Copied ' + what + '.');
+    } catch (_) {
+      const ta = h('textarea', { class: 'textcopy', readonly: true, 'aria-label': 'List text' });
+      ta.value = text;
+      showPanel([h('h2', { text: 'Copy the list' }),
+        h('p', { class: 'fine', text: 'Copying isn’t allowed here. Press and hold the text, then choose Select all and Copy.' }), ta,
+        h('div', { class: 'edit-actions' }, h('button', { class: 'btn', type: 'button', 'data-close': '', text: 'Done' }))]);
+    }
+  }
+
+  /* ---------- Admin view ---------- */
+  function renderAdmin() {
+    $('#bar').hidden = true;
+    $('#footer').hidden = true;
+    const root = $('#view-admin');
+    const key = JSON.stringify([S.inventories, S.counts, S.people, S.recent, S.locked, Math.floor(Date.now() / 60000), S.counts.map(countProgress)]) + S.items.size;
+    if (root.dataset.key === key) return;
+    root.dataset.key = key;
+    const cards = [];
+
+    // Counts per inventory.
+    const countCards = S.inventories.map((inv) => {
+      const oc = openCount(inv.id);
+      const n = all(inv.id).length;
+      const kids = [h('div', { class: 'card-head' }, h('span', { class: 'tag small', text: inv.name }),
+        h('span', { class: 'group-meta', text: n + (n === 1 ? ' product' : ' products') }))];
+      if (oc) {
+        const late = isLate(oc);
+        kids.push(h('p', { text: (late ? 'Time is up (was until ' : 'Counting until ') + fmtUntil(oc.until) + (late ? ').' : '.') }),
+          h('p', { class: 'fine', text: 'Counting: ' + ((oc.counterNames || []).join(', ') || 'only admins') + ' · ' + countProgress(oc) }),
+          h('div', { class: 'btn-row' },
+            h('button', { class: 'btn primary', type: 'button', text: 'Finish & save', onclick: (e) => finishCount(e.currentTarget, oc) }),
+            h('button', { class: 'btn', type: 'button', text: 'Change', onclick: () => openCountSheet(inv, oc) }),
+            h('button', { class: 'btn danger', type: 'button', text: 'Discard', onclick: (e) => discardCount(e.currentTarget, oc) })));
+      } else {
+        kids.push(h('p', { class: 'fine', text: 'Locked: nobody can change counts.' }),
+          h('div', { class: 'btn-row' }, h('button', { class: 'btn', type: 'button', text: 'Start a count', onclick: () => openCountSheet(inv, null) })));
+      }
+      return h('div', { class: 'card' }, ...kids);
+    });
+    cards.push(h('h2', { class: 'h2', text: 'Counts' }), ...countCards);
+
+    // People.
+    const people = S.people.slice().sort((a, b) => collator.compare(a.name || a.email, b.name || b.email));
+    cards.push(h('h2', { class: 'h2', text: 'People' }), h('div', { class: 'card' },
+      h('p', { class: 'fine', text: 'Only people on this list can sign in. Each sees only their inventories. Removing someone or turning them off blocks them on their next tap.' }),
+      h('ul', { class: 'plain' }, ...people.map((p) => h('li', null, h('button', { type: 'button', onclick: () => openPerson(p) },
+        h('span', { class: 'line1' }, h('b', { text: p.name || p.email.split('@')[0] }), h('span', { class: 'pill', text: ROLE_NAME[p.role] }),
+          p.active ? null : h('span', { class: 'pill off', text: 'Off' })),
+        h('span', { class: 'meta', text: [p.email, p.inventories === '*' ? 'All inventories' : (p.inventories || []).map(invName).join(', ') || 'No inventories',
+          p.lastSeen ? 'last sign-in ' + fmtDay(p.lastSeen) : 'never signed in'].join(' · ') }))))),
+      h('div', { class: 'btn-row' }, h('button', { class: 'btn primary', type: 'button', text: 'Add person', onclick: () => openPerson(null) }))));
+
+    // Inventories.
+    cards.push(h('h2', { class: 'h2', text: 'Inventories' }), h('div', { class: 'card' },
+      h('ul', { class: 'plain' }, ...S.inventories.map((inv) => h('li', null, h('button', { type: 'button', onclick: () => openInventory(inv) },
+        h('b', { text: inv.name }), h('span', { class: 'meta', text: all(inv.id).length + (all(inv.id).length === 1 ? ' product' : ' products') + ' · tap to rename' }))))),
+      h('div', { class: 'btn-row' }, h('button', { class: 'btn', type: 'button', text: 'Add inventory', onclick: () => openInventory(null) }))));
+
+    // Recent counts (history).
+    cards.push(h('h2', { class: 'h2', text: 'Recent counts' }), h('div', { class: 'card' },
+      S.recent.length ? h('ul', { class: 'plain' }, ...S.recent.map((c) => h('li', null, h('div', { class: 'static' },
+        h('span', { class: 'line1' }, h('b', { text: invName(c.inventory) }), h('span', { class: 'pill' + (c.status === 'saved' ? ' ok' : ' off'), text: c.status === 'saved' ? 'Saved' : 'Discarded' })),
+        h('span', { class: 'meta', text: [fmtDay(c.closedAt) + ' ' + (c.closedAt ? timeFmt.format(new Date(c.closedAt)) : ''),
+          c.status === 'saved' ? c.items + ' products' : '', 'by ' + ((c.counterNames || []).join(', ') || c.closedBy), 'saved by ' + c.closedBy].filter(Boolean).join(' · ') })))))
+        : h('p', { class: 'fine', text: 'No counts saved yet. Every saved count is kept in the History tab of your Sheet: date, who counted and the number.' })));
+
+    // Security.
+    const out = h('button', { class: 'btn danger', type: 'button', text: 'Sign everyone out' });
+    out.addEventListener('click', async () => {
+      if (!out.classList.contains('armed')) { arm(out, 'Tap again to sign everyone out', 'Sign everyone out'); return; }
+      disarm(out, 'Sign everyone out');
+      try {
+        const r = await write('signOutAll', {});
+        S.session = r.session;
+        store.set('inv-session', r.session);
+        toast('Everyone else was signed out. They can sign in again if they’re still on the list.');
+      } catch (e) { failed(e); }
+    });
+    const lockBtn = h('button', { class: S.locked ? 'btn primary' : 'btn', type: 'button', text: S.locked ? 'Unlock app' : 'Lock app' });
+    lockBtn.addEventListener('click', () => setLock(!S.locked, lockBtn));
+    if (IN_APPS_SCRIPT) out.hidden = true;   // the test drive has no sign-in passes to cancel
+    cards.push(h('h2', { class: 'h2', text: 'Security' }),
+      h('div', { class: 'card' },
+        h('div', { class: 'card-head' }, h('b', { text: 'Lock app' }), h('span', { class: 'pill' + (S.locked ? ' off' : ' ok'), text: S.locked ? 'Locked' : 'Open' })),
+        h('p', { class: 'fine', text: S.locked
+          ? 'Only admins can use the app. Everyone else sees “Locked” until you unlock it.'
+          : 'Lock it at night or on vacation: only admins can use it, everyone else sees “Locked” on their next tap.' }),
+        h('div', { class: 'btn-row' }, lockBtn)),
+      h('div', { class: 'card' },
+        h('p', { class: 'fine', text: 'Don’t share the Google Sheet, the private prices file or the photo folder with staff: the app works without it. Prices only reach Admin and Buyer phones.' }),
+        h('div', { class: 'btn-row' }, out, S.sheetUrl ? h('a', { class: 'btn', href: S.sheetUrl, target: '_blank', rel: 'noopener', text: 'Open Google Sheet' }) : null)));
+
+    root.replaceChildren(h('div', { class: 'cards' }, ...cards));
+  }
+
+  // Lock: only admins can use the app until it's unlocked. Locking asks for a second tap.
+  async function setLock(on, btn) {
+    if (on && btn && !btn.classList.contains('armed')) { arm(btn, 'Tap again to lock', 'Lock app'); return; }
+    if (btn) { disarm(btn, on ? 'Lock app' : 'Unlock app'); btn.disabled = true; }
+    await adminCall('lockSet', { locked: on }, on ? 'Locked. Only admins can use the app now.' : 'Unlocked. Everyone on the list can use the app again.');
+    if (btn) btn.disabled = false;
+  }
+  function renderLockbar() {
+    const show = isAdmin() && S.locked;
+    $('#lockbar').hidden = !show;
+  }
+  $('#lockbar-btn').addEventListener('click', () => setLock(false));
+
+  function openPerson(p) {
+    const isNew = !p;
+    const email = h('input', { type: 'email', id: 'person-email', autocomplete: 'off', maxlength: '120', value: p ? p.email : '', required: true, disabled: !isNew });
+    const name = h('input', { id: 'person-name', autocomplete: 'off', maxlength: '60', value: p ? str(p.name) : '' });
+    const role = h('select', { id: 'person-role' }, ...['counter', 'buyer', 'viewer', 'admin'].map((r) => h('option', { value: r, text: ROLE_NAME[r] })));
+    role.value = p ? p.role : 'counter';
+    const invBoxes = S.inventories.map((inv) => h('label', { class: 'check' },
+      h('input', { type: 'checkbox', value: inv.id, checked: p ? p.inventories === '*' || (p.inventories || []).includes(inv.id) : S.inventories.length === 1 }),
+      h('span', { text: inv.name })));
+    const invWrap = h('div', { class: 'checks' }, ...invBoxes);
+    const active = h('input', { type: 'checkbox', id: 'person-active', checked: p ? p.active : true });
+    const help = h('p', { class: 'fine' });
+    const syncRole = () => {
+      invWrap.hidden = role.value === 'admin';
+      help.textContent = {
+        admin: 'Admins see and change everything, including prices and people.',
+        buyer: 'Buyers see stock, the shopping list and prices. They can’t change stock.',
+        counter: 'Counters see their inventories without prices, and can count only while you have a count open for them.',
+        viewer: 'Viewers see the stock of their inventories. They can’t change anything.',
+      }[role.value];
+    };
+    role.addEventListener('change', syncRole);
+    syncRole();
+    const save = h('button', { class: 'btn primary', type: 'submit', text: isNew ? 'Add person' : 'Save' });
+    const rm = isNew ? null : h('button', { class: 'btn danger push', type: 'button', text: 'Remove' });
+    const form = h('form', { autocomplete: 'off' },
+      h('h2', { text: isNew ? 'Add person' : (p.name || p.email) }),
+      h('label', { class: 'field' }, h('span', { text: 'Google account email' }), email),
+      h('label', { class: 'field' }, h('span', { text: 'Name' }), name),
+      h('label', { class: 'field' }, h('span', { text: 'Role' }), role), help,
+      h('h3', { text: 'Inventories' }), invWrap,
+      h('label', { class: 'check' }, active, h('span', { text: 'Can sign in (turn off to block without removing)' })),
+      h('div', { class: 'edit-actions' }, save, h('button', { class: 'btn', type: 'button', 'data-close': '', text: 'Cancel' }), rm));
+    form.style.display = 'grid';
+    form.style.gap = '12px';
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const em = email.value.trim().toLowerCase();
+      if (!/^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/.test(em)) { toast('Type the person’s Google account email.'); return; }
+      const invs = [...invWrap.querySelectorAll('input:checked')].map((x) => x.value);
+      if (role.value !== 'admin' && !invs.length) { toast('Choose at least one inventory.'); return; }
+      save.disabled = true;
+      const d = await adminCall('personSave', { email: em, name: name.value.trim(), role: role.value, inventories: role.value === 'admin' ? '*' : invs, active: active.checked },
+        isNew ? 'Added. They can sign in with that Google account now.' : 'Saved.');
+      save.disabled = false;
+      if (d) closeSheets();
+    });
+    if (rm) rm.addEventListener('click', async () => {
+      if (!rm.classList.contains('armed')) { arm(rm, 'Tap again to remove', 'Remove'); return; }
+      disarm(rm, 'Remove');
+      const d = await adminCall('personRemove', { email: p.email }, 'Removed. They’re blocked from now on.');
+      if (d) closeSheets();
+    });
+    showPanel([form]);
+    if (isNew) setTimeout(() => email.focus(), 50);
+  }
+  function openInventory(inv) {
+    const name = h('input', { id: 'inv-name', maxlength: '40', autocomplete: 'off', value: inv ? inv.name : '', required: true });
+    const save = h('button', { class: 'btn primary', type: 'submit', text: inv ? 'Rename' : 'Add inventory' });
+    const form = h('form', { autocomplete: 'off' },
+      h('h2', { text: inv ? 'Rename ' + inv.name : 'Add inventory' }),
+      h('p', { class: 'fine', text: 'Inventories are groups of products, like a department (Candy, Sodas, Snacks). People get access per inventory.' }),
+      h('label', { class: 'field' }, h('span', { text: 'Name' }), name),
+      h('div', { class: 'edit-actions' }, save, h('button', { class: 'btn', type: 'button', 'data-close': '', text: 'Cancel' })));
+    form.style.display = 'grid';
+    form.style.gap = '12px';
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!name.value.trim()) return;
+      save.disabled = true;
+      const d = await adminCall('inventorySave', { id: inv ? inv.id : '', name: name.value.trim() }, inv ? 'Renamed.' : 'Inventory added.');
+      save.disabled = false;
+      if (d) closeSheets();
+    });
+    showPanel([form]);
+    setTimeout(() => name.focus(), 50);
+  }
+
+  /* ======================= Product sheet ======================= */
+  function openItem(id, opts) {
+    const o = opts || {};
+    const d0 = S.items.get(id);
+    if (!d0) { toast('That product was removed.'); return; }
+    if (d0.inventory !== S.inv && S.inventories.some((v) => v.id === d0.inventory)) {
+      S.inv = d0.inventory;
+      store.set('inv-current', S.inv);
+      refresh();
+    }
+    const title = h('h2');
+    const meta = h('p', { class: 'fine' });
+    const pic = h('img', { class: 'hero-photo', alt: '', hidden: true, onclick: () => showPhoto(id) });
+    // Counting block.
+    const minus = h('button', { class: 'step', type: 'button', text: '−' });
+    const qty = h('input', { class: 'qty', type: 'text', inputmode: 'decimal', placeholder: '–', autocomplete: 'off', id: 'item-qty' });
+    const unit = h('span', { class: 'unit' });
+    const plus = h('button', { class: 'step', type: 'button', text: '+' });
+    const stepper = h('div', { class: 'stepper big' }, minus, h('span', { class: 'qty-wrap' }, qty, unit), plus);
+    const countEq = h('p', { class: 'fine' });
+    const countBox = h('div', { class: 'count-box' }, h('h3', { text: 'Your count' }), stepper, countEq);
+    countBox.style.display = 'grid';
+    countBox.style.gap = '8px';
+    minus.addEventListener('click', () => { const v = sessionVal(id); if (v === null) setCount(id, 0); else if (v > 0) addCount(id, -Math.min(1, v)); });
+    plus.addEventListener('click', () => addCount(id, 1));
+    qty.addEventListener('input', () => {
+      const clean = qty.value.replace(/[^0-9.,]/g, '').slice(0, 9);
+      if (clean !== qty.value) qty.value = clean;
+      const n = parseAmount(clean);
+      if (!Number.isNaN(n)) typeCount(id, n);
+    });
+    qty.addEventListener('blur', () => commitTyped(id));
+    qty.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); qty.blur(); } });
+    // Info lines.
+    const stockP = h('p', { class: 'info' });
+    const orderP = h('p', { class: 'info' });
+    const priceP = h('p', { class: 'info' });
+    // Buying block (buyer/admin, when on the list).
+    const bQty = h('input', { id: 'buy-qty', inputmode: 'numeric', autocomplete: 'off' });
+    const bPrice = h('input', { id: 'buy-price', inputmode: 'decimal', autocomplete: 'off', placeholder: 'Optional' });
+    const bSupplier = h('input', { id: 'buy-supplier', autocomplete: 'off', maxlength: '60' });
+    const bSave = h('button', { class: 'btn primary', type: 'submit' });
+    const bUndo = h('button', { class: 'btn', type: 'button', text: 'Not bought' });
+    const buyForm = h('form', { autocomplete: 'off' }, h('h3', { text: 'Buying' }),
+      h('div', { class: 'fields-2' }, h('label', { class: 'field' }, h('span', { text: 'Packs bought' }), bQty),
+        h('label', { class: 'field' }, h('span', { text: 'Price per pack' }), bPrice)),
+      h('label', { class: 'field' }, h('span', { text: 'Supplier' }), bSupplier),
+      h('div', { class: 'edit-actions' }, bSave, bUndo));
+    buyForm.style.display = 'grid';
+    buyForm.style.gap = '10px';
+    const histTitle = h('h3', { text: 'Price history' });
+    const hist = h('ul', { class: 'hist' });
+    // Expiry block.
+    const expBox = h('div', { class: 'batches' });
+    const expTitle = h('h3', { text: 'Expiry (expires on the 1st of the month)' });
+    const actions = h('div', { class: 'edit-actions' });
+    let filled = false;
+
+    buyForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const qv = bQty.value.trim() === '' ? null : parseInt(bQty.value, 10);
+      const pv = parseAmount(bPrice.value);
+      if (Number.isNaN(pv) || pv === 0) { toast('Type the price per pack, or leave it empty.'); return; }
+      bSave.disabled = true;
+      try {
+        const r = await write('orderTick', { id, bought: true, qty: qv, price: pv, supplier: bSupplier.value.trim() });
+        applyItem(r.item);
+        if (r.price) { S.prices[id] = r.price; loadHistory(); }
+        toast(pv ? 'Bought, price saved.' : 'Marked as bought.');
+        bPrice.value = '';
+      } catch (err) { failed(err); }
+      bSave.disabled = false;
+      refresh();
+    });
+    bUndo.addEventListener('click', async () => {
+      try { applyItem((await write('orderTick', { id, bought: false })).item); } catch (err) { failed(err); }
+      refresh();
+    });
+    async function loadHistory() {
+      if (!can('prices')) return;
+      try {
+        const list = await api('priceHistory', { id });
+        const it = S.items.get(id) || d0;
+        hist.replaceChildren(...list.map((p) => h('li', null, h('span', { text: fmtDay(p.date) + (p.supplier ? ' · ' + p.supplier : '') }),
+          h('b', { text: fmtMoney(p.price) + (unitPrice(it, p.price) ? ' · ' + unitPrice(it, p.price) : '') }))));
+        histTitle.hidden = hist.hidden = !list.length;
+      } catch (_) { histTitle.hidden = hist.hidden = true; }
+    }
+    histTitle.hidden = hist.hidden = true;
+
+    function drawExpiry(editable) {
+      const d = S.items.get(id) || d0;
+      const list = batchesOf(d);
+      expBox.replaceChildren();
+      if (!editable) {
+        expBox.append(list.length ? h('ul', { class: 'hist' }, ...list.map((b) => h('li', null, h('span', { text: fmtExpiry(b.m) }),
+          h('b', { text: b.q == null ? '' : fmtQty(d, b.q) })))) : h('p', { class: 'fine', text: 'No expiry recorded.' }));
+        return;
+      }
+      const rowsEl = h('div', { class: 'batches' });
+      const addRow = (b) => {
+        const m = h('input', { type: 'month', value: b ? b.m : '', 'aria-label': 'Expiry month', placeholder: 'YYYY-MM' });
+        const q = h('input', { inputmode: 'decimal', value: b && b.q != null ? String(b.q) : '', placeholder: unitLabel(unitOf(d), 2), 'aria-label': 'How many expire then' });
+        const x = h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Remove this date', icon: 'x' });
+        const r = h('div', { class: 'batch' }, h('label', { class: 'field' }, h('span', { text: 'Month' }), m), h('label', { class: 'field' }, h('span', { text: 'How many' }), q), x);
+        x.addEventListener('click', () => r.remove());
+        rowsEl.append(r);
+      };
+      list.forEach(addRow);
+      const add = h('button', { class: 'link-btn add-here', type: 'button', text: list.length ? '+ Add another date' : '+ Add an expiry date', onclick: () => addRow(null) });
+      const save = h('button', { class: 'btn', type: 'button', text: 'Save expiry' });
+      save.addEventListener('click', async () => {
+        const batches = [];
+        for (const r of rowsEl.children) {
+          const [m, q] = r.querySelectorAll('input');
+          const mv = m.value.trim();
+          if (!mv) continue;
+          if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(mv)) { toast('Write the month as YYYY-MM, like 2027-03.'); return; }
+          const qv = parseAmount(q.value);
+          if (Number.isNaN(qv)) { toast('“How many” must be a number.'); return; }
+          batches.push({ m: mv, q: qv });
+        }
+        save.disabled = true;
+        try { applyItem(await write('expirySet', { id, batches })); toast('Expiry saved.'); } catch (err) { failed(err); }
+        save.disabled = false;
+        refresh();
+      });
+      expBox.append(rowsEl, h('div', { class: 'edit-actions' }, add, save));
+    }
+
+    const sync = () => {
+      const d = S.items.get(id);
+      if (!d) { closeSheets(); toast('That product was removed.'); return; }
+      const counting = d.inventory === S.inv && countingHere();
+      const u = unitOf(d);
+      title.textContent = labelOf(d);
+      meta.textContent = [invName(d.inventory) + ' ' + secOf(d), str(d.brand), packText(d), o.code ? 'Barcode ' + o.code : (str(d.barcode) ? 'Barcode ' + str(d.barcode) : '')].filter(Boolean).join(' · ');
+      showThumb(pic, id, str(d.image), true);
+      pic.alt = d.image ? 'Photo of ' + labelOf(d) + '. Tap to enlarge.' : '';
+      countBox.hidden = !counting;
+      if (counting) {
+        const v = sessionVal(id);
+        if (document.activeElement !== qty) qty.value = v === null ? '' : String(v);
+        unit.textContent = unitLabel(u, v);
+        stepper.classList.toggle('is-counted', v !== null && v > 0);
+        stepper.classList.toggle('is-out', v === 0);
+        countEq.textContent = v === null ? 'Not counted yet. Tap + or type how many ' + unitLabel(u, 2) + '.' : (eqText(d, v) || 'Saved as you go.');
+        qty.setAttribute('aria-label', 'Count in ' + unitLabel(u, 2));
+      }
+      const showsStock = 'count' in d;
+      stockP.hidden = !showsStock;
+      if (showsStock) {
+        const c = num(d.count);
+        stockP.replaceChildren('Stock: ', h('b', { text: c === null ? 'not counted' : fmtQty(d, c) }),
+          c !== null && eqText(d, c) ? ' (' + eqText(d, c) + ')' : '', d.countedAt ? ' · counted ' + fmtDay(d.countedAt) : '');
+      }
+      const hasOrder = 'onList' in d;
+      orderP.hidden = !hasOrder;
+      if (hasOrder) {
+        const s = suggestion(d);
+        orderP.textContent = [d.onList ? 'On the list: ' + fmtQty({ unit: 'pack' }, num(d.buyQty)) + (d.bought ? ' · bought' : '') : 'Not on the list',
+          num(d.min) !== null && num(d.max) !== null ? 'min ' + d.min + ' · max ' + d.max + ' packs' : 'no min/max',
+          s ? 'suggested ' + s : '', str(d.supplier) ? 'supplier ' + d.supplier : ''].filter(Boolean).join(' · ');
+      }
+      const p = S.prices[id];
+      priceP.hidden = !(p && can('prices'));
+      if (p && can('prices')) priceP.textContent = 'Last price: ' + fmtMoney(p.price) + ' per pack' + (unitPrice(d, p.price) ? ' (' + unitPrice(d, p.price) + ')' : '') +
+        ' · ' + fmtDay(p.date) + (p.supplier ? ' · ' + p.supplier : '');
+      buyForm.hidden = !(can('tick') && d.onList);
+      if (!buyForm.hidden) {
+        bSave.textContent = d.bought ? 'Save price' : 'Mark as bought';
+        bUndo.hidden = !d.bought;
+        // Fill the boxes when the sheet opens or the item changes, never while you're typing in them.
+        const fillKey = [d.bought, d.buyQty, d.boughtQty].join('|');
+        if (filled !== fillKey) {
+          bQty.value = String(num(d.bought ? d.boughtQty : d.buyQty) ?? '');
+          if (!filled) bSupplier.value = str(d.supplier) || (p ? str(p.supplier) : '');
+          filled = fillKey;
+        }
+      }
+      const editable = isAdmin() || counting;
+      if (expBox.dataset.mode !== String(editable)) { expBox.dataset.mode = String(editable); drawExpiry(editable); }
+      if (!actions.childElementCount) {
+        actions.replaceChildren(...[
+          can('edit') ? h('button', { class: 'btn', type: 'button', text: 'Edit product', onclick: () => openEditor(id) }) : null,
+          h('button', { class: 'btn primary', type: 'button', 'data-close': '', text: 'Done' })].filter(Boolean));
+      }
+    };
+    showPanel([title, meta, pic, countBox, stockP, orderP, priceP, buyForm, histTitle, hist, expTitle, expBox, actions], sync);
+    loadHistory();
+  }
+
+  /* ======================= Product editor (admin) ======================= */
+  function openEditor(id, defaults) {
+    const isNew = !id;
+    const d = isNew ? Object.assign({ inventory: S.inv, unit: 'pack' }, defaults || {}) : Object.assign({}, S.items.get(id));
+    if (!isNew && !S.items.get(id)) return;
+    const f = (key, label, attrs) => {
+      const input = h('input', Object.assign({ autocomplete: 'off', value: d[key] == null ? '' : String(d[key]) }, attrs || {}));
+      input.dataset.key = key;
+      return h('label', { class: 'field' }, h('span', { text: label }), input);
+    };
+    const inv = h('select', { 'data-key': 'inventory' }, ...S.inventories.map((v) => h('option', { value: v.id, text: v.name })));
+    inv.value = d.inventory || S.inv;
+    const unit = h('select', { 'data-key': 'unit' },
+      h('option', { value: 'pack', text: 'Packs (closed bags, boxes)' }), h('option', { value: 'pc', text: 'Pieces' }), h('option', { value: 'g', text: 'Grams (weighed)' }));
+    unit.value = unitOf(d);
+    const barcode = h('input', { autocomplete: 'off', inputmode: 'numeric', maxlength: '300', value: str(d.barcode), 'data-key': 'barcode', placeholder: 'Scan or type' });
+    const scanBtn = h('button', { class: 'btn', type: 'button', text: 'Scan' });
+    scanBtn.addEventListener('click', () => {
+      const keep = readForm();
+      openScanner({ mode: 'capture', onCode: (code) => {
+        const codes = str(keep.barcode).split(/[\s,;]+/).filter(Boolean);
+        if (!codes.map(codeKey).includes(codeKey(code))) codes.push(code);
+        keep.barcode = codes.join(', ');
+        openEditor(id, null, keep);
+      }, onCancel: () => openEditor(id, null, keep) });
+    });
+    // Photo controls (existing products only).
+    const photoImg = h('img', { class: 'ed-photo', alt: '' });
+    const photoView = h('button', { class: 'ed-photo-view', type: 'button', hidden: true, 'aria-label': 'View larger photo' }, photoImg);
+    const photoAdd = h('button', { class: 'btn', type: 'button' });
+    const photoRm = h('button', { class: 'btn danger', type: 'button', text: 'Remove photo' });
+    const photoField = isNew ? null : h('div', { class: 'photo-field' }, photoView, h('div', { class: 'btn-row' }, photoAdd, photoRm));
+    photoView.addEventListener('click', () => showPhoto(id));
+    photoAdd.addEventListener('click', () => pickPhoto(id));
+    photoRm.addEventListener('click', () => {
+      if (!photoRm.classList.contains('armed')) { arm(photoRm, 'Tap again to remove', 'Remove photo'); return; }
+      disarm(photoRm, 'Remove photo');
+      removePhoto(id);
+    });
+    const save = h('button', { class: 'btn primary', type: 'submit', text: isNew ? 'Add product' : 'Save' });
+    const del = isNew ? null : h('button', { class: 'btn danger push', type: 'button', text: 'Remove product' });
+    const form = h('form', { autocomplete: 'off', class: 'editor-form' },
+      h('h2', { text: isNew ? 'Add product' : 'Edit ' + labelOf(d) }),
+      photoField,
+      f('product', 'Product', { maxlength: '80', required: true }),
+      h('div', { class: 'fields-2' }, f('variant', 'Variant', { maxlength: '60', placeholder: 'None' }), f('section', 'Section / shelf', { maxlength: '12', required: true, list: 'dl-sections' })),
+      h('div', { class: 'fields-2' }, h('label', { class: 'field' }, h('span', { text: 'Inventory' }), inv), f('brand', 'Brand', { maxlength: '60', list: 'dl-brands' })),
+      f('supplier', 'Supplier (where you buy it)', { maxlength: '60', list: 'dl-suppliers' }),
+      h('label', { class: 'field' }, h('span', { text: 'Count in' }), unit),
+      h('div', { class: 'fields-2' }, f('packPieces', 'Pieces per pack', { inputmode: 'numeric', maxlength: '7', placeholder: '–' }), f('packGrams', 'Grams per pack', { inputmode: 'decimal', maxlength: '9', placeholder: '–' })),
+      h('div', { class: 'fields-2' }, f('min', 'Min packs', { inputmode: 'numeric', maxlength: '6', placeholder: '–' }), f('max', 'Max packs', { inputmode: 'numeric', maxlength: '6', placeholder: '–' })),
+      h('p', { class: 'fine', text: 'When stock drops below min, the order suggestion fills it up to max, rounded up to ' + (S.orderMultiple === 2 ? 'pairs' : 'multiples of ' + S.orderMultiple) + '. Pack sizes turn counts into pieces and kilos.' }),
+      h('div', { class: 'with-btn' }, h('label', { class: 'field' }, h('span', { text: 'Barcodes' }), barcode), scanBtn),
+      f('note', 'Note', { maxlength: '160', placeholder: 'None' }),
+      h('div', { class: 'edit-actions' }, save, h('button', { class: 'btn', type: 'button', text: 'Cancel', onclick: () => (isNew ? closeSheets() : openItem(id)) }), del));
+    form.style.display = 'grid';
+    form.style.gap = '12px';
+    form.append(datalist('dl-sections', [...new Set([...S.items.values()].filter((x) => x.inventory === inv.value).map(secOf))].filter((x) => x !== '—')),
+      datalist('dl-brands', [...new Set([...S.items.values()].map((x) => str(x.brand)).filter(Boolean))].sort(collator.compare)),
+      datalist('dl-suppliers', [...new Set([...S.items.values()].map((x) => str(x.supplier)).filter(Boolean))].sort(collator.compare)));
+    const extra = arguments[2];
+    if (extra) for (const el of form.querySelectorAll('[data-key]')) if (el.dataset.key in extra) el.value = extra[el.dataset.key] == null ? '' : String(extra[el.dataset.key]);
+    function readForm() {
+      const out = {};
+      for (const el of form.querySelectorAll('[data-key]')) out[el.dataset.key] = el.value;
+      return out;
+    }
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const v = readForm();
+      const patch = {
+        product: v.product.trim(), variant: v.variant.trim(), section: v.section.trim().toUpperCase(), inventory: v.inventory,
+        brand: v.brand.trim(), supplier: v.supplier.trim(), unit: v.unit, barcode: v.barcode, note: v.note.trim(),
+      };
+      if (!patch.product || !patch.section) { toast('Product and section can’t be empty.'); return; }
+      for (const k of ['packPieces', 'packGrams', 'min', 'max']) {
+        const n = parseAmount(v[k]);
+        if (Number.isNaN(n)) { toast('Pack sizes and min/max must be numbers.'); return; }
+        patch[k] = k === 'packGrams' ? n : n === null ? null : Math.round(n);
+      }
+      if (patch.min != null && patch.max != null && patch.min > patch.max) { toast('Min can’t be more than max.'); return; }
+      if (isNew || secOf(d) !== patch.section || d.inventory !== patch.inventory) patch.order = nextOrder(patch.inventory, patch.section);
+      save.disabled = true;
+      try {
+        const it = isNew ? await write('itemAdd', { data: Object.assign({ id: rid('p-').slice(0, 14) }, patch) }) : await write('itemUpdate', { id, patch });
+        applyItem(it);
+        toast((isNew ? 'Added ' : 'Saved ') + labelOf(it) + '.');
+        if (it.inventory !== S.inv) { S.inv = it.inventory; store.set('inv-current', S.inv); }
+        openItem(it.id);
+      } catch (err) { failed(err); }
+      save.disabled = false;
+      refresh();
+    });
+    if (del) del.addEventListener('click', () => {
+      if (!del.classList.contains('armed')) { arm(del, 'Tap again to remove', 'Remove product'); return; }
+      disarm(del, 'Remove product');
+      removeItem(id);
+    });
+    const sync = () => {
+      if (isNew) return;
+      const it = S.items.get(id);
+      if (!it) { closeSheets(); return; }
+      const busy = S.photoBusy === id;
+      photoView.hidden = !it.image;
+      if (it.image) showThumb(photoImg, id, str(it.image), true);
+      photoAdd.textContent = busy ? 'Saving photo…' : it.image ? 'Change photo' : 'Add photo';
+      photoAdd.disabled = busy;
+      photoRm.hidden = !it.image || busy;
+    };
+    showPanel([form], sync);
+  }
+  function datalist(id, names) { return h('datalist', { id }, ...names.map((n) => h('option', { value: n }))); }
+  function nextOrder(inv, section) {
+    let max = 0;
+    for (const d of S.items.values()) if (d.inventory === inv && secOf(d) === section && num(d.order) > max) max = d.order;
+    return max + 10;
+  }
+  const undoBuf = [];
+  async function removeItem(id) {
+    const d = S.items.get(id);
+    if (!d) return;
+    closeSheets();
+    S.items.delete(id);
+    refresh();
+    try {
+      const full = await write('itemDelete', { id });
+      undoBuf.push(full);
+      toast('Removed ' + labelOf(d) + '.', { action: 'Undo', ms: 7000, fn: undoRemove, undo: true });
+    } catch (e) {
+      S.items.set(id, d);
+      failed(e);
+    }
+  }
+  async function undoRemove() {
+    const batch = undoBuf.splice(0);
+    for (const data of batch) {
+      try { applyItem(await write('itemRestore', { data })); } catch (e) { failed(e); }
+    }
+    if (batch.length) toast('Put back ' + labelOf(batch[0]) + '.');
+    refresh();
+  }
+
+  /* ======================= Bottom sheets ======================= */
+  const panel = $('#panel'), backdrop = $('#backdrop');
+  function closeSheets() {
+    const was = !panel.hidden;
+    panel.hidden = true;
+    backdrop.hidden = true;
+    S.sheetSync = null;
+    stopLive();
+    const fn = S.onSheetClose;
+    S.onSheetClose = null;
+    S.scan = null;
+    if (was && fn) fn();
+  }
+  function showPanel(children, sync, onClose) {
+    closeSheets();
+    panel.replaceChildren(...children.filter(Boolean));
+    panel.hidden = false;
+    backdrop.hidden = false;
+    S.sheetSync = sync || null;
+    S.onSheetClose = onClose || null;
+    if (sync) sync();
+    panel.scrollTop = 0;
+  }
+  backdrop.addEventListener('click', closeSheets);
+  document.addEventListener('click', (e) => { if (e.target.closest('[data-close]')) closeSheets(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !panel.hidden) { closeSheets(); return; }
+    const lab = e.target.closest && e.target.closest('label[for][tabindex]');
+    if (lab && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      const inp = document.getElementById(lab.getAttribute('for'));
+      if (inp) inp.click();
+    }
+  });
+
+  /* ======================= Scanning ======================= */
+  // Modes: "count" adds 1 per scan (change the amount on the card), "find" opens the product,
+  // "capture" hands the code back (used by the editor's barcode field).
+  function openScanner(opts) {
+    const sc = { mode: opts.mode, onCode: opts.onCode, onCancel: opts.onCancel, card: null, recent: [], last: '', lastAt: 0 };
+    const canCountHere = countingHere();
+    if (sc.mode === 'count' && !canCountHere) sc.mode = 'find';
+    const title = h('h2');
+    const sub = h('p', { class: 'fine' });
+    const seg = canCountHere && sc.mode !== 'capture' ? h('div', { class: 'seg', role: 'group', 'aria-label': 'Scan mode' },
+      h('button', { type: 'button', 'data-mode': 'count', text: 'Count' }), h('button', { type: 'button', 'data-mode': 'find', text: 'Find' })) : null;
+    const video = h('video', { playsinline: true, muted: true, autoplay: true });
+    video.muted = true;
+    const cam = h('div', { class: 'live-wrap', hidden: true }, video, h('span', { class: 'live-frame', 'aria-hidden': 'true' }));
+    const camBtn = h('button', { class: 'btn', type: 'button', text: 'Use camera' });
+    const photoBtn = h('label', { class: 'btn', for: 'file-barcode', tabindex: '0', text: 'Photo of barcode' });
+    const camNote = h('p', { class: 'fine', hidden: true });
+    const input = h('input', { id: 'scan-input', autocomplete: 'off', inputmode: 'numeric', enterkeyhint: 'go', maxlength: '40', placeholder: 'Scanner or code' });
+    const form = h('form', { class: 'code-form', autocomplete: 'off' },
+      h('label', { class: 'field' }, h('span', { text: 'Bluetooth scanner or typed code' }), input), h('button', { class: 'btn', type: 'submit', text: 'Enter' }));
+    const card = h('div', { class: 'scan-card', hidden: true, 'aria-live': 'polite' });
+    const recentTitle = h('h3', { text: 'Just counted', hidden: true });
+    const recent = h('ul', { class: 'recent' });
+    const done = h('button', { class: 'btn primary', type: 'button', 'data-close': '', text: 'Done' });
+    sc.els = { title, sub, seg, card, recent, recentTitle, cam, camBtn, camNote, input, video };
+    const drawMode = () => {
+      const inv = currentInv();
+      title.textContent = sc.mode === 'count' ? 'Scan to count' : sc.mode === 'capture' ? 'Scan the barcode' : 'Find by barcode';
+      sub.textContent = sc.mode === 'count' ? 'Each scan adds 1 in ' + (inv ? inv.name : 'this inventory') + '. Change the amount on the card if you scanned a box of several.'
+        : sc.mode === 'capture' ? 'The code goes into the product’s barcode field.'
+          : 'Scan a product to open it.';
+      if (seg) for (const b of seg.children) b.setAttribute('aria-pressed', String(b.dataset.mode === sc.mode));
+      card.hidden = sc.mode !== 'count' || !sc.card;
+      recentTitle.hidden = sc.mode !== 'count' || !sc.recent.length;
+      recent.hidden = sc.mode !== 'count';
+    };
+    sc.drawMode = drawMode;
+    if (seg) seg.addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      sc.mode = b.dataset.mode;
+      drawMode();
+    });
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const v = input.value.trim();
+      input.value = '';
+      if (v) handleScan(v);
+      input.focus();
+    });
+    camBtn.addEventListener('click', () => {
+      if (S.liveStop) { stopLive(); store.set('inv-camera', 'off'); }
+      else startLive(sc);
+    });
+    showPanel([title, sub, seg, cam, h('div', { class: 'btn-row' }, camBtn, photoBtn), camNote, form, card, recentTitle, recent,
+      h('div', { class: 'edit-actions' }, done)], () => drawScanCard(sc), () => { if (sc.mode === 'capture' && sc.onCancel && !sc.captured) sc.onCancel(); });
+    S.scan = sc;
+    drawMode();
+    camBtn.hidden = !cameraPossible();
+    if (!cameraPossible() && IN_APPS_SCRIPT) {
+      camNote.hidden = false;
+      camNote.textContent = 'The live camera doesn’t work inside Apps Script. Use “Photo of barcode”, a Bluetooth scanner or type the code. The GitHub version has the live camera.';
+    }
+    nativeDetector().then((d) => { if (!d) loadZXing().catch(() => { /* retried when scanning */ }); });
+    if (cameraPossible() && sc.mode !== 'capture' && store.get('inv-camera') === 'on') startLive(sc);
+    else if (cameraPossible() && sc.mode === 'capture') startLive(sc);
+    else setTimeout(() => { try { input.focus({ preventScroll: true }); } catch (e) { /* ignore */ } }, 60);
+  }
+
+  function handleScan(raw) {
+    const sc = S.scan;
+    const code = str(raw).trim();
+    if (!sc || !codeKey(code)) { toast('That doesn’t look like a barcode.'); return; }
+    if (sc.mode === 'capture') {
+      sc.captured = true;
+      const fn = sc.onCode;
+      S.onSheetClose = null;
+      closeSheets();
+      fn(code);
+      return;
+    }
+    const ids = findByBarcode(code);
+    if (sc.mode === 'find') {
+      if (ids.length === 1) { closeSheets(); openItem(ids[0], { code }); }
+      else if (ids.length > 1) pickProduct(code, ids, 'This barcode is on more than one product. Which one is it?', (id) => openItem(id, { code }));
+      else unknownCode(code, 'find');
+      return;
+    }
+    const here = ids.filter((id) => (S.items.get(id) || {}).inventory === S.inv);
+    if (here.length === 1) scanCount(here[0]);
+    else if (here.length > 1) pickProduct(code, here, 'This barcode is on more than one product. Which one did you scan?', (id) => { reopenCount(); scanCount(id); });
+    else if (ids.length) toast('That product is in ' + invName((S.items.get(ids[0]) || {}).inventory) + ', not in this count.');
+    else unknownCode(code, 'count');
+  }
+  function reopenCount() { if (!S.scan) openScanner({ mode: 'count' }); }
+  // A counting scan: +1 right away (for products counted in grams, one pack's weight). The card lets you
+  // change that scan's amount, for example when you scanned a box of several.
+  function scanCount(id) {
+    const sc = S.scan;
+    if (!sc) return;
+    const it = S.items.get(id) || {};
+    const qty = unitOf(it) === 'g' && num(it.packGrams) ? num(it.packGrams) : 1;
+    if (sc.card) { sc.recent.unshift(sc.card); sc.recent = sc.recent.slice(0, 8); }
+    sc.card = { id, qty, key: rid('s') };
+    addCount(id, qty);
+    feedback();
+    sc.drawMode();
+    drawScanCard(sc);
+    drawRecent(sc);
+  }
+  function drawScanCard(sc) {
+    if (!sc || !sc.els) return;
+    const { card } = sc.els;
+    const c = sc.card;
+    if (!c || sc.mode !== 'count') { card.hidden = true; return; }
+    const it = S.items.get(c.id);
+    if (!it) { card.hidden = true; return; }
+    card.hidden = false;
+    const u = unitOf(it);
+    if (card.dataset.key !== c.key) {
+      card.dataset.key = c.key;
+      const minus = h('button', { class: 'step', type: 'button', text: '−', 'aria-label': 'Less' });
+      const qty = h('input', { class: 'qty', type: 'text', inputmode: 'decimal', autocomplete: 'off', id: 'scan-qty', 'aria-label': 'Amount for this scan' });
+      const plus = h('button', { class: 'step', type: 'button', text: '+', 'aria-label': 'More' });
+      const total = h('p', { class: 'fine' });
+      const change = (n) => {
+        if (n == null || Number.isNaN(n) || n < 0) return;
+        const diff = round2(n - c.qty);
+        if (!diff) return;
+        c.qty = n;
+        addCount(c.id, diff);
+      };
+      minus.addEventListener('click', () => { change(Math.max(0, c.qty - 1)); qty.value = String(c.qty); });
+      plus.addEventListener('click', () => { change(c.qty + 1); qty.value = String(c.qty); });
+      qty.addEventListener('change', () => { const n = parseAmount(qty.value); if (n !== null && !Number.isNaN(n)) change(n); qty.value = String(c.qty); });
+      qty.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); qty.blur(); sc.els.input.focus(); } });
+      qty.value = String(c.qty);
+      card.replaceChildren(h('span', { class: 'title', text: labelOf(it) }),
+        h('div', { class: 'stepper big' }, minus, h('span', { class: 'qty-wrap' }, qty, h('span', { class: 'unit', text: unitLabel(u, 2) + ' added' })), plus), total);
+      card._total = total;
+    }
+    const v = sessionVal(c.id);
+    card._total.textContent = 'Now counted: ' + fmtQty(it, v) + (eqText(it, v) ? ' (' + eqText(it, v) + ')' : '');
+    drawRecent(sc);
+  }
+  function drawRecent(sc) {
+    const { recent, recentTitle } = sc.els;
+    recentTitle.hidden = sc.mode !== 'count' || !sc.recent.length;
+    recent.replaceChildren(...sc.recent.map((r) => {
+      const it = S.items.get(r.id);
+      if (!it) return null;
+      const undo = h('button', { class: 'link-btn', type: 'button', text: r.undone ? 'Undone' : 'Undo', disabled: !!r.undone || !r.qty });
+      undo.addEventListener('click', () => { if (r.undone) return; r.undone = true; addCount(r.id, -r.qty); drawRecent(sc); });
+      return h('li', null, h('b', { text: '+' + nf.format(r.qty) }), h('span', { text: labelOf(it) }), undo);
+    }).filter(Boolean));
+  }
+  function pickProduct(code, only, message, then) {
+    const search = h('input', { type: 'search', placeholder: 'Search products', autocomplete: 'off', id: 'pick-q' });
+    const ul = h('ul', { class: 'pick' });
+    const fill = () => {
+      const q = norm(search.value).split(/\s+/).filter(Boolean);
+      const items = sortItems([...S.items.values()].filter((it) => (!only || only.includes(it.id)) &&
+        q.every((t) => norm([it.product, it.variant, it.brand, it.section].join(' ')).includes(t))));
+      ul.replaceChildren(...items.slice(0, 200).map((it) => h('li', null, h('button', { type: 'button', onclick: () => { closeSheets(); then(it.id); } },
+        h('span', { class: 'pname', text: str(it.product) }), it.variant ? h('span', { class: 'variant', text: str(it.variant) }) : null,
+        h('small', { text: [invName(it.inventory), secOf(it), str(it.brand)].filter(Boolean).join(' · ') })))));
+      if (!items.length) ul.append(h('li', { class: 'pick-empty', text: 'No product matches. Try fewer letters.' }));
+    };
+    search.addEventListener('input', fill);
+    fill();
+    showPanel([h('h2', { text: 'Pick the product' }), h('p', { class: 'codebox', text: code }), h('p', { class: 'fine', text: message }),
+      h('label', { class: 'field' }, h('span', { text: 'Search' }), search), ul,
+      h('div', { class: 'edit-actions' }, h('button', { class: 'btn', type: 'button', 'data-close': '', text: 'Cancel' }))]);
+  }
+  // A barcode no product has yet. Admins link it once; others are told to ask.
+  function unknownCode(code, mode) {
+    if (!can('edit')) { toast('Barcode ' + code + ' isn’t linked to a product yet. Ask the admin to link it.'); return; }
+    const pool = mode === 'count' ? [...S.items.values()].filter((it) => it.inventory === S.inv).map((it) => it.id) : null;
+    pickProduct(code, pool, 'This barcode isn’t linked yet. Pick its product and it will be recognized from now on.', async (id) => {
+      const d = S.items.get(id);
+      if (!d) return;
+      const codes = str(d.barcode).split(/[\s,;]+/).filter(Boolean);
+      if (!codes.map(codeKey).includes(codeKey(code))) codes.push(code);
+      try {
+        applyItem(await write('itemUpdate', { id, patch: { barcode: codes.join(', ') } }));
+        toast('Barcode linked to ' + labelOf(d) + '.');
+      } catch (e) { failed(e); return; }
+      if (mode === 'count') { reopenCount(); scanCount(id); } else openItem(id, { code });
+    });
+  }
+  let audioCtx = null;
+  function feedback() {
+    try { if (navigator.vibrate) navigator.vibrate(40); } catch (e) { /* ignore */ }
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.frequency.value = 1500;
+      g.gain.value = 0.06;
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(); o.stop(audioCtx.currentTime + 0.07);
+    } catch (e) { /* no sound: fine */ }
+    const cam = S.scan && S.scan.els && S.scan.els.cam;
+    if (cam) { cam.classList.add('flash'); setTimeout(() => cam.classList.remove('flash'), 250); }
+  }
+
+  /* ---------- camera + barcode reading ---------- */
+  function cameraPossible() {
+    if (S.liveBlocked) return false;
+    if (!(navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function' && window.isSecureContext)) return false;
+    // Pages framed by another site (like Apps Script) may not be allowed to use the camera at all.
+    const pp = document.permissionsPolicy || document.featurePolicy;
+    try { if (pp && typeof pp.allowsFeature === 'function' && !pp.allowsFeature('camera')) return false; } catch (e) { /* unknown: try */ }
+    return true;
+  }
+  function stopLive() {
+    if (S.liveStop) { const f = S.liveStop; S.liveStop = null; f(); }
+  }
+  async function startLive(sc) {
+    const { video, cam, camBtn, camNote } = sc.els;
+    let stream = null, stopped = false;
+    S.liveStop = () => {
+      stopped = true;
+      if (stream) stream.getTracks().forEach((t) => t.stop());
+      cam.hidden = true;
+      camBtn.textContent = 'Use camera';
+    };
+    cam.hidden = false;
+    camBtn.textContent = 'Stop camera';
+    camNote.hidden = false;
+    camNote.textContent = 'Starting the camera…';
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+    } catch (_) {
+      if (stopped) return;
+      S.liveStop = null;
+      S.liveBlocked = true;
+      cam.hidden = true;
+      camBtn.hidden = true;
+      camNote.textContent = 'The camera isn’t available. Allow camera access in your browser, or use a photo, a Bluetooth scanner or type the code.';
+      return;
+    }
+    if (stopped) { stream.getTracks().forEach((t) => t.stop()); return; }
+    if (sc.mode !== 'capture') store.set('inv-camera', 'on');
+    video.srcObject = stream;
+    try { await video.play(); } catch (_) { /* frames still arrive */ }
+    camNote.textContent = 'Hold the barcode inside the yellow box.';
+    const det = await nativeDetector();
+    let Z = null;
+    if (!det) {
+      try { Z = await loadZXing(); } catch (_) { camNote.textContent = 'The barcode reader didn’t load. Check your connection.'; return; }
+    }
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const scanFrame = async () => {
+      if (stopped || S.scan !== sc) return;
+      let code = null;
+      if (video.readyState >= 2 && video.videoWidth) {
+        try {
+          if (det) {
+            const found = await det.detect(video);
+            if (found && found.length && found[0].rawValue) code = found[0].rawValue;
+          } else {
+            const vw = video.videoWidth, vh = video.videoHeight;
+            const cw = Math.round(vw * 0.8), ch = Math.round(vh * 0.5);
+            const scale = Math.min(1, 900 / cw);
+            canvas.width = Math.max(1, Math.round(cw * scale));
+            canvas.height = Math.max(1, Math.round(ch * scale));
+            ctx.drawImage(video, (vw - cw) / 2, (vh - ch) / 2, cw, ch, 0, 0, canvas.width, canvas.height);
+            code = decodeZ(Z, grayOf(canvas), canvas.width, canvas.height);
+          }
+        } catch (_) { code = null; }
+      }
+      if (stopped || S.scan !== sc) return;
+      // The same code right after is the same item still in view; wait 1.5 s before counting it again.
+      if (code && (code !== sc.last || Date.now() - sc.lastAt > 1500)) {
+        sc.last = code;
+        sc.lastAt = Date.now();
+        handleScan(code);
+        if (S.scan !== sc) return;
+      } else if (code) sc.lastAt = Date.now();
+      setTimeout(scanFrame, det ? 150 : 250);
+    };
+    scanFrame();
+  }
+  const FORMATS = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'itf'];
+  let zxP = null;
+  function loadZXing() {
+    if (window.ZXing) return Promise.resolve(window.ZXing);
+    if (zxP) return zxP;
+    const srcs = ['https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js', 'https://unpkg.com/@zxing/library@0.20.0/umd/index.min.js'];
+    zxP = new Promise((resolve, reject) => {
+      const tryAt = (i) => {
+        if (i >= srcs.length) { zxP = null; reject(new Error('load')); return; }
+        const s = document.createElement('script');
+        s.src = srcs[i];
+        s.async = true;
+        s.crossOrigin = 'anonymous';
+        s.onload = () => (window.ZXing ? resolve(window.ZXing) : tryAt(i + 1));
+        s.onerror = () => { s.remove(); tryAt(i + 1); };
+        document.head.append(s);
+      };
+      tryAt(0);
+    });
+    return zxP;
+  }
+  async function nativeDetector() {
+    if (!('BarcodeDetector' in window)) return null;
+    try {
+      const supported = await window.BarcodeDetector.getSupportedFormats();
+      const formats = FORMATS.filter((f) => supported.includes(f));
+      return formats.length ? new window.BarcodeDetector({ formats }) : null;
+    } catch (_) { return null; }
+  }
+  function decodeZ(Z, lum, w, hgt) {
+    const F = Z.BarcodeFormat;
+    const hints = new Map();
+    hints.set(Z.DecodeHintType.POSSIBLE_FORMATS, [F.EAN_13, F.EAN_8, F.UPC_A, F.UPC_E, F.CODE_128, F.CODE_39, F.ITF].filter((x) => x !== undefined));
+    hints.set(Z.DecodeHintType.TRY_HARDER, true);
+    const reader = new Z.MultiFormatReader();
+    reader.setHints(hints);
+    const res = reader.decode(new Z.BinaryBitmap(new Z.HybridBinarizer(new Z.RGBLuminanceSource(lum, w, hgt))), hints);
+    return res && res.getText ? res.getText() : null;
+  }
+  async function loadImage(file) {
+    const url = URL.createObjectURL(file);
+    try {
+      const img = new Image();
+      img.src = url;
+      await img.decode();
+      return img;
+    } finally {
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    }
+  }
+  function drawScaled(img, max, crop, rot) {
+    const W = img.naturalWidth, H = img.naturalHeight;
+    let sx = 0, sy = 0, sw = W, sh = H;
+    if (crop) { sw = Math.round(W * crop); sh = Math.round(H * crop); sx = Math.round((W - sw) / 2); sy = Math.round((H - sh) / 2); }
+    const scale = Math.min(1, max / Math.max(sw, sh));
+    const w = Math.max(1, Math.round(sw * scale)), hgt = Math.max(1, Math.round(sh * scale));
+    const c = document.createElement('canvas');
+    if (rot === 90) { c.width = hgt; c.height = w; } else { c.width = w; c.height = hgt; }
+    const ctx = c.getContext('2d', { willReadFrequently: true });
+    if (rot === 90) { ctx.translate(hgt, 0); ctx.rotate(Math.PI / 2); }
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, w, hgt);
+    return c;
+  }
+  function grayOf(c) {
+    const { data } = c.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, c.width, c.height);
+    const n = c.width * c.height;
+    const out = new Uint8ClampedArray(n);
+    for (let i = 0, j = 0; i < n; i++, j += 4) out[i] = (data[j] * 77 + data[j + 1] * 150 + data[j + 2] * 29) >> 8;
+    return out;
+  }
+  async function readBarcode(file) {
+    const img = await loadImage(file);
+    const det = await nativeDetector();
+    if (det) {
+      try {
+        const found = await det.detect(img);
+        if (found && found.length && found[0].rawValue) return found[0].rawValue;
+      } catch (_) { /* fall back to the library */ }
+    }
+    let Z;
+    try { Z = await loadZXing(); } catch (_) { throw new Error('load'); }
+    for (const [max, crop, rot] of [[1600, null, 0], [1600, 0.6, 0], [1600, null, 90], [1400, 0.6, 90], [1000, null, 0]]) {
+      await tick();
+      try {
+        const c = drawScaled(img, max, crop, rot);
+        const text = decodeZ(Z, grayOf(c), c.width, c.height);
+        if (text) return text;
+      } catch (_) { /* try the next view */ }
+    }
+    return null;
+  }
+  const fileBarcode = $('#file-barcode');
+  fileBarcode.addEventListener('change', async () => {
+    const f = fileBarcode.files && fileBarcode.files[0];
+    fileBarcode.value = '';
+    const sc = S.scan;
+    if (!f || !sc) return;
+    const note = sc.els.camNote;
+    note.hidden = false;
+    note.textContent = 'Reading the barcode in your photo…';
+    let code = null, loadFailed = false;
+    try { code = await readBarcode(f); } catch (e) { loadFailed = !!(e && e.message === 'load'); }
+    if (S.scan !== sc) return;
+    if (code) { note.textContent = 'Read ' + code + '.'; handleScan(code); }
+    else note.textContent = loadFailed ? 'The barcode reader didn’t load. Check your connection, or type the number under the barcode.'
+      : 'No barcode found. Fill the photo with the barcode, hold steady and avoid glare, or type the number.';
+  });
+
+  /* ======================= Photos ======================= */
+  // Full photos are saved in a Google Drive folder; a small preview of each is kept in the Sheet so the list
+  // loads fast. Each product has a photo "token" that changes on every upload, so phones know when to download.
+  const PREVIEW_SIDE = 320, PHOTO_SIDE = 1600;
+  const MAX_PREVIEW_CHARS = 48000, MAX_PHOTO_CHARS = 7000000;
+  const imgCache = new Map(), fullCache = new Map(), imgQueue = new Set(), imgMissing = new Set();
+  let imgBusy = false;
+  const imgKey = (id, token) => id + '|' + token;
+  function wantImage(id, token) {
+    const key = imgKey(id, token);
+    if (!token || imgCache.has(key) || imgQueue.has(key) || imgMissing.has(key)) return;
+    imgQueue.add(key);
+    pumpImages();
+  }
+  async function pumpImages() {
+    if (imgBusy || !imgQueue.size || !connected()) return;
+    imgBusy = true;
+    const keys = [...imgQueue].slice(0, 8);
+    let fail = false;
+    try {
+      const got = await api('images', { ids: keys.map((k) => k.split('|')[0]) });
+      for (const g of got || []) imgCache.set(imgKey(g.id, g.token), g.data);
+      for (const k of keys) { imgQueue.delete(k); if (!imgCache.has(k)) imgMissing.add(k); }
+    } catch (_) { fail = true; }
+    imgBusy = false;
+    refresh();
+    if (imgQueue.size) setTimeout(pumpImages, fail ? 5000 : 0);
+  }
+  const thumbObserver = 'IntersectionObserver' in window ? new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (!e.isIntersecting) continue;
+      thumbObserver.unobserve(e.target);
+      const [id, token] = (e.target.dataset.want || '').split('|');
+      if (id && token) wantImage(id, token);
+    }
+  }, { rootMargin: '300px 0px' }) : null;
+  function showThumb(img, id, token, eager) {
+    img.hidden = !token;
+    if (!token) { img.removeAttribute('src'); delete img.dataset.key; return; }
+    const key = imgKey(id, token);
+    if (img.dataset.key === key) return;
+    const src = imgCache.get(key);
+    if (src) {
+      img.src = src;
+      img.dataset.key = key;
+      if (thumbObserver) thumbObserver.unobserve(img);
+      return;
+    }
+    img.removeAttribute('src');
+    delete img.dataset.key;
+    img.dataset.want = key;
+    if (eager || !thumbObserver) wantImage(id, token);
+    else thumbObserver.observe(img);
+  }
+  function jpegFrom(img, maxSide, quality) {
+    const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+    const c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(img.naturalWidth * scale));
+    c.height = Math.max(1, Math.round(img.naturalHeight * scale));
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, c.width, c.height);
+    ctx.drawImage(img, 0, 0, c.width, c.height);
+    return c.toDataURL('image/jpeg', quality);
+  }
+  async function makePhotos(file) {
+    let img;
+    try { img = await loadImage(file); } catch (_) { throw new Error('unreadable'); }
+    let preview = jpegFrom(img, PREVIEW_SIDE, 0.7);
+    if (preview.length > MAX_PREVIEW_CHARS) preview = jpegFrom(img, 200, 0.6);
+    const photo = jpegFrom(img, PHOTO_SIDE, 0.82);
+    if (preview.length > MAX_PREVIEW_CHARS || photo.length > MAX_PHOTO_CHARS) throw new Error('unreadable');
+    return { preview, photo };
+  }
+  const filePhoto = $('#file-photo');
+  function pickPhoto(id) { S.photoFor = id; filePhoto.click(); }
+  filePhoto.addEventListener('change', async () => {
+    const file = filePhoto.files && filePhoto.files[0];
+    const id = S.photoFor;
+    filePhoto.value = '';
+    S.photoFor = null;
+    if (!file || !id || !S.items.has(id)) return;
+    S.photoBusy = id;
+    refresh();
+    try {
+      const photos = await makePhotos(file);
+      const item = await write('photoSave', { id, preview: photos.preview, photo: photos.photo });
+      imgCache.set(imgKey(id, item.image), photos.preview);
+      rememberFull(imgKey(id, item.image), photos.photo);
+      applyItem(item);
+      toast('Photo saved to Google Drive.');
+    } catch (err) {
+      if (err && err.message === 'unreadable') toast('That photo couldn’t be read. Try a JPEG or PNG.');
+      else failed(err);
+    } finally {
+      S.photoBusy = null;
+      refresh();
+    }
+  });
+  async function removePhoto(id) {
+    S.photoBusy = id;
+    refresh();
+    try { applyItem(await write('photoRemove', { id })); toast('Photo removed.'); }
+    catch (err) { failed(err); }
+    finally { S.photoBusy = null; refresh(); }
+  }
+  function rememberFull(key, data) {
+    fullCache.set(key, data);
+    if (fullCache.size > 6) fullCache.delete(fullCache.keys().next().value);
+  }
+  async function showPhoto(id) {
+    const d = S.items.get(id);
+    if (!d || !d.image) return;
+    const key = imgKey(id, str(d.image));
+    const src = fullCache.get(key) || imgCache.get(key);
+    if (!src) return;
+    const img = h('img', { class: 'viewer-img', src, alt: 'Photo of ' + labelOf(d) });
+    const note = h('p', { class: 'fine', text: 'Loading the full photo…' });
+    note.hidden = fullCache.has(key);
+    showPanel([h('h2', { text: labelOf(d) }), img, note,
+      h('div', { class: 'edit-actions' }, h('button', { class: 'btn', type: 'button', text: 'Back', onclick: () => openItem(id) }))]);
+    if (fullCache.has(key)) return;
+    try {
+      const got = await api('photo', { id });
+      if (got && got.data) { rememberFull(imgKey(id, got.token), got.data); img.src = got.data; note.hidden = true; }
+      else note.textContent = 'Only the preview is available.';
+    } catch (_) { note.textContent = 'Couldn’t load the full photo. Showing the preview.'; }
+  }
+
+  /* ======================= Toast ======================= */
+  const toastEl = $('#toast'), toastMsg = $('#toast-msg'), toastAct = $('#toast-act');
+  let toastT = 0, toastFn = null;
+  function toast(msg, opts) {
+    const o = opts || {};
+    if (!o.undo) undoBuf.length = 0;   // Undo only applies while its own message shows
+    toastMsg.textContent = msg;
+    toastFn = o.fn || null;
+    toastAct.hidden = !o.action;
+    toastAct.textContent = o.action || '';
+    toastEl.hidden = false;
+    clearTimeout(toastT);
+    toastT = setTimeout(() => { toastEl.hidden = true; toastFn = null; undoBuf.length = 0; }, o.ms || (o.action ? 6000 : 3400));
+  }
+  toastAct.addEventListener('click', () => {
+    const fn = toastFn;
+    toastFn = null;
+    toastEl.hidden = true;
+    clearTimeout(toastT);
+    if (fn) fn();
+  });
+
+  /* ======================= Start ======================= */
+  $('#sync-refresh').addEventListener('click', () => load());
+  setInterval(() => { if (document.visibilityState === 'visible' && S.loaded && connected()) load(); }, POLL_MS);
+  setInterval(() => { if (S.loaded && S.view === 'count') refresh(); }, 30000);   // keeps "until" texts current
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && S.loaded && connected()) load(); });
+  window.addEventListener('beforeunload', (e) => { if (typed.size || queue.length || sending) { typed.forEach((_, id) => commitTyped(id)); e.preventDefault(); } });
+  boot();
+})();
+</script>
+</body>
+</html>
